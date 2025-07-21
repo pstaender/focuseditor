@@ -46,7 +46,10 @@ header {
   #github {
     svg {
       width: 2rem;
-      opacity: 0.5;
+      fill: #999;
+      @media (prefers-color-scheme: dark) {
+        fill: #eee;
+      }
     }
   }
 }

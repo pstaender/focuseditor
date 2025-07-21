@@ -422,7 +422,7 @@ class FocusEditorCore {
 
     this.#addCssClassToBlockWithCaret();
 
-    if (event.ctrlKey && event.altKey) {
+    if (event.ctrlKey && event.altKey || event.altKey && event.shiftKey) {
       for (let name in this.#keyboardShortcuts) {
         if (this.#keyboardShortcuts[name].accessKey === event.code) {
           this.#keyboardShortcuts[name].handler(event);

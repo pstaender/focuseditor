@@ -9,7 +9,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "vite .",
-    "build": "rm -rf ./dist && mkdir -p ./dist && npx postcss src/css/*.css --use autoprefixer --no-map  -d dist/ && esbuild src/FocusEditor.mjs --bundle --outfile=dist/FocusEditor.js; npm run docs",
+    "build": "rm -rf ./cjs && mkdir -p ./cjs && npx postcss src/css/*.css --use autoprefixer --no-map  -d cjs/ && esbuild src/FocusEditor.mjs --bundle --outfile=cjs/FocusEditor.js; npm run docs",
     "server": "npx http-server .",
     "docs": "npx jsdoc -c jsdoc.json"
   },
