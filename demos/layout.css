@@ -58,7 +58,9 @@ focus-editor:not(.textarea) {
 }
 focus-editor:not(.playing):focus-within, focus-editor:hover {
   box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
-
+}
+focus-editor.playing .focus-editor {
+  caret-color: transparent;
 }
 .demo {
   height: 100vh;

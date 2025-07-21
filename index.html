@@ -340,6 +340,12 @@ Type some text and click **Submit** …</textarea>
 
       document.querySelector(".demos").addEventListener("scroll", stopDemo);
 
+      document.querySelector(".demo").addEventListener("click", (ev) => {
+        if (ev.clientX > 0 && ev.clientY > 0) {
+          stopDemo();
+        };
+      });
+
       window.addEventListener("keydown", (ev) => {
         if (ev.key === "Escape") {
           stopDemo();

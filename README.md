@@ -1,7 +1,7 @@
 # Focus Editor
 ## … for the focused editor
 
-[See the demo](https://pstaender.github.io/focuseditor/)
+[See the demo 🚀](https://pstaender.github.io/focuseditor/)
 
 ### Features
 
@@ -11,28 +11,43 @@
 
 ### Usage
 
-In your html:
+```html
+<head>
+  <link rel="stylesheet" href="https://pstaender.github.io/focuseditor/src/css/FocusEditor.css">
+</head>
+<body>
+  <focus-editor></focus-editor>
+
+  <script type="module">
+    import { init } from "./src/FocusEditor.mjs"
+    init();
+  </script>
+</body>
+```
+
+### Usage with replacing textareas
 
 ```html
-<focus-editor></focus-editor>
+<head>
+  <link rel="stylesheet" href="https://pstaender.github.io/focuseditor/src/css/FocusEditor.css">
+</head>
+<body>
+  <textarea name="my-textarea"></textarea>
+
+  <script type="module">
+    import { textareasAsFocusEditor } from "./src/FocusEditor.mjs"
+    textareasAsFocusEditor();
+  </script>
+</body>
 ```
 
-```js
-import { init } from "./src/FocusEditor.mjs"
-init();
-```
-
-### Textarea Usage
+### JavaScript usage in older browser without module support
 
 ```html
-<textarea name="my-textarea"></textarea>
-```
-
-and replace any `textarea` with `focus-editor` with:
-
-```js
-import { textareasAsFocusEditor } from "./src/FocusEditor.mjs"
-textareasAsFocusEditor();
+<script src="https://pstaender.github.io/focuseditor/dist/FocusEditor.js"></script>
+<script>
+window.initFocusEditor();
+</script>
 ```
 
 ### Todos
