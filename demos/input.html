@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>On Input Event</title>
+    <link rel="stylesheet" href="../src/css/FocusEditor.css" />
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <div class="demo-code">
+      <div>
+        <focus-editor class="textarea" autofocus style="width: 100%;">
+          ## Add input event listener If the text has edited, the input event is triggered.
+
+          ```js
+          document
+            .querySelector("focus-editor")
+            .addEventListener("input", (ev) => {
+              console.log("Input event triggered");
+            });
+          ```
+        </focus-editor>
+        <div id="content"></div>
+      </div>
+
+      <script type="module">
+        import FocusEditor from "../src/FocusEditor.mjs";
+        import * as markdownConverter from "https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js";
+
+        FocusEditor();
+
+        const update = (ev) => {
+          document.getElementById("content").innerHTML = marked.parse(
+            focusEditor.value,
+          );
+        };
+        const focusEditor = document.querySelector("focus-editor");
+        focusEditor.addEventListener("input", update);
+        update();
+      </script>
+    </div>
+
+    <pre class="show-demo-code"></pre>
+
+    <script src="demo.js"></script>
+  </body>
+</html>

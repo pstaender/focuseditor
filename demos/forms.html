@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Forms</title>
+    <link rel="stylesheet" href="../src/css/FocusEditor.css" />
+    <link rel="stylesheet" href="../src/css/FocusEditor.css" />
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <div class="demo-code">
+      <form
+        onsubmit="alert(new URLSearchParams(new FormData(this)).toString()); return false;"
+      >
+        <textarea
+          name="content"
+          autofocus
+        >
+          Hello 👋,
+
+          You can use focus editor to create form input(s).
+          Just add a `name` attribute to the focus-editor element.
+        </textarea>
+        <br>
+        <input type="submit" />
+      </form>
+
+      <script type="module">
+        import {init, textareasAsFocusEditor} from "../src/FocusEditor.mjs";
+        textareasAsFocusEditor();
+
+        let focusEditor = document.querySelector("focus-editor");
+      </script>
+    </div>
+
+    <pre class="show-demo-code"></pre>
+    <script src="demo.js"></script>
+  </body>
+</html>

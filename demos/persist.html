@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Forms</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <div class="demo-code">
+      <link rel="stylesheet" href="../dist/FocusEditor.css" />
+      <script src="../dist/FocusEditor.js"></script>
+      <focus-editor
+        class="textarea"
+        style="width: min(40rem, 100vw); height: 10rem;"
+      >
+        ## Use it as persisting editor
+
+        Write text which *persists* in current session
+      </focus-editor>
+
+      <script type="module">
+        window.initFocusEditor();
+
+        let focusEditor = document.querySelector("focus-editor");
+        if (sessionStorage.getItem("message")?.trim()) {
+          focusEditor.value = sessionStorage.getItem("message");
+        }
+        focusEditor.addEventListener("input", (ev) => {
+          sessionStorage.setItem("message", focusEditor.value);
+        });
+      </script>
+    </div>
+
+    <pre class="show-demo-code"></pre>
+
+    <script src="demo.js"></script>
+  </body>
+</html>
