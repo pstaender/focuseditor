@@ -56,7 +56,7 @@ class FocusEditorCore {
   #scrollToCaretDebounced = null;
   #renderMarkdownToHtmlDebounced = null;
 
-  HIDE_CARET_ON_CHANGE_FOR_MILLISECONDS = 100;
+  HIDE_CARET_ON_CHANGE_FOR_MILLISECONDS = helper.isTouchDevice() ? false : 100;
 
   POSSIBLE_BLOCK_CLASSES = [
     "h1",
