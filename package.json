@@ -1,9 +1,9 @@
 {
-  "name": "focuseditor",
+  "name": "browser-focus-editor",
   "version": "0.0.1",
   "description": "focus editor for the focused editor",
   "license": "AGPL-3.0-only",
-  "author": "",
+  "author": "Philipp Staender <pstaender@mailbox.org>",
   "type": "module",
   "main": "src/FocusEditor.mjs",
   "scripts": {
