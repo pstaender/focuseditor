@@ -417,24 +417,6 @@ class FocusEditorCore {
         return;
       }
     }
-
-    /* BROWSER-FIX-1: FIXES BEHAVIOUR OF CHROME WHEN BACKSPACE IS PRESSED, MOVING CONTAINER UP */
-    /*
-    if (event.key === "Backspace") {
-      let current = helper.currentBlockWithCaret();
-      if (current?.innerText?.trim() === "") {
-        event.preventDefault();
-        if (!current.previousSibling.innerText?.trim()) {
-          current.previousSibling.innerHTML = "";
-        }
-        Cursor.setCurrentCursorPosition(
-          current.previousSibling.innerText?.length || 0,
-          current.previousSibling,
-        );
-        current.remove();
-      }
-    }
-    */
   }
 
   #onKeyUp(event, editor) {

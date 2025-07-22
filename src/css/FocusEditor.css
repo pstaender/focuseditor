@@ -195,12 +195,13 @@ focus-editor {
     }
     .hr {
       position: relative;
-      &:after {
+      color: var(--color-grey-lighter);
+      &:before {
         content: "";
         display: block;
         height: 3px;
-        background: var(--color-grey-light);
-        top: 50%;
+        background: color-mix(in srgb, var(--color-grey) 30%, transparent);
+        top: calc(50% - 0.7px);
         position: absolute;
         right: 0;
         width: calc(100% - var(--space-left));

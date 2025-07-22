@@ -71,7 +71,7 @@ export function addCodeBlockClasses(elements) {
       isCodeBlock = true;
       el.classList.add("code-block-start");
       codeBlocks = [];
-    } else if (l.match(/^\s*```\s*$/) && isCodeBlock) {
+    } else if (l.match(/^```$/) && isCodeBlock) {
       isCodeBlock = false;
       el.classList.add("code-block");
       el.classList.add("code-block-end");
@@ -107,7 +107,7 @@ export function addParagraphClasses(elements) {
     helper.removeStyleAttributeRecursively(el);
 
     // remove new line at the beginning
-    el.innerText = el.innerText.replace(/^\n+/, '');
+    el.innerText = el.innerText.replace(/^\n+/, "");
     // add whitespace workaround
     if (el.innerText.trim() === "") {
       el.innerHTML = helper.whiteSpaceWorkaround();
@@ -126,7 +126,10 @@ export function addParagraphClasses(elements) {
     }
 
     if (el.innerText.match(/^#{1,6}\s/)) {
-
+      let id = helper.slugify(el.innerText.replace(/^#{1,6}\s/, "").trim());
+      if (!document.getElementById(id)) {
+        el.id = id;
+      }
       el.classList.add(`h${el.innerText.match(/^(#{1,6})\s/)[1].length}`);
       return;
     }
@@ -138,8 +141,9 @@ export function addParagraphClasses(elements) {
       );
     }
 
-    if (el.innerText.match(/^---\s*$/)) {
-      el.classList.add(`hr`);
+    // <hr>
+    if (el.innerText.match(/^(-{3,}|\*{3,})\s*$/)) {
+      el.classList.add("hr");
     }
 
     let html = el.innerText;
@@ -160,7 +164,7 @@ export function addParagraphClasses(elements) {
 
         // find bold+italic
         html = html.replace(
-          /([\*\\]*)(\*{3}.+?\*{3})([\*]*)/g,
+          /([*\\]*)(\*{3}[^\s]+.*?\*{3})([*]*)/g,
           (...matches) => {
             if (matches[1] || matches[3]) {
               return matches[0];
@@ -169,31 +173,39 @@ export function addParagraphClasses(elements) {
           },
         );
 
-        // find italic
-        html = html.replace(
-          /([\*\\]*)(\*{1}.+?\*{1})([\*]*)/g,
-          (...matches) => {
+        // find *italic* / _italic_
+        html = html
+          .replace(/([*\\]*)(\*{1}[^\s]+.*?\*{1})([*]*)/g, (...matches) => {
             if (matches[1] || matches[3]) {
               return matches[0];
             }
             return `<em>${matches[2]}</em>`;
-          },
-        );
+          })
+          .replace(/([_\\]*)(_{1}[^\s]+.*?_{1})([_]*)/g, (...matches) => {
+            if (matches[1] || matches[3]) {
+              return matches[0];
+            }
+            return `<em>${matches[2]}</em>`;
+          });
 
-        // find bold text
-        html = html.replace(
-          /([\*\\]*)(\*\*.+?\*\*)([\*\\]*)/g,
-          (...matches) => {
+        // find **bold text** / __bold text__
+        html = html
+          .replace(/([*\\]*)(\*\*[^\s]+.*?\*\*)([*\\]*)/g, (...matches) => {
             if (matches[1] || matches[3]) {
               return matches[0];
             }
             return `<strong>${matches[2]}</strong>`;
-          },
-        );
+          })
+          .replace(/([_\\]*)(__[^\s]+.*?__)([_\\]*)/g, (...matches) => {
+            if (matches[1] || matches[3]) {
+              return matches[0];
+            }
+            return `<strong>${matches[2]}</strong>`;
+          });
 
         // find strike through text
         html = html.replace(
-          /([\~\\])*(\~\~[^~].+?\~\~)([\~])*/g,
+          /([~\\])*(~~[^~][^\s]+.*?~~)([~])*/g,
           (...matches) => {
             if (matches[1] || matches[3]) {
               return matches[0];
@@ -223,7 +235,11 @@ export function addParagraphClasses(elements) {
     }
     el.querySelectorAll("a.link[href]").forEach((el) => {
       el.addEventListener("dblclick", (ev) => {
-        if (ev.metaKey || ev.altKey ||/^http[s]*\:\/\//i.test(el.getAttribute('href'))) {
+        if (
+          ev.metaKey ||
+          ev.altKey ||
+          /^http[s]*\:\/\//i.test(el.getAttribute("href"))
+        ) {
           // open in new tab
           window.open(el.href, "_blank");
         } else {
