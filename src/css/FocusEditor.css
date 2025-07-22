@@ -24,8 +24,8 @@ focus-editor {
   --border-radius: 4px;
   --space-left: 0px;
   --margin-left-factor: 0;
-  --editor-vertical-padding: 0;
-  --editor-horizontal-padding: 0;
+  --editor-vertical-padding: 0px;
+  --editor-horizontal-padding: 0px;
 
   &.indent-headings,
   &.zen-mode {

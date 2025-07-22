@@ -8,13 +8,10 @@ class FocusEditorCore {
   #debug = false;
   #readonly = false;
   #tabSize = 0;
-  #scroll = {
-    behavior: null,
-    block: null,
-  };
   #caretPosition = [];
   #editorCaretPosition = 0;
   #textLengthOnKeyDown = 0;
+  #placeholder = "";
   #keyboardShortcuts = {
     refresh: {
       accessKey: "KeyR",
@@ -32,10 +29,8 @@ class FocusEditorCore {
       handler: (ev) => {
         if (this.target.parentElement.hasAttribute("focus")) {
           this.target.parentElement.removeAttribute("focus");
-          findButton(ev).classList.remove("active");
         } else {
           this.target.parentElement.setAttribute("focus", "paragraph");
-          findButton(ev).classList.add("active");
         }
       },
       accessKey: "KeyX",
@@ -44,19 +39,16 @@ class FocusEditorCore {
       handler: (ev) => {
         if (this.target.parentElement.hasAttribute("image-preview")) {
           this.target.parentElement.removeAttribute("image-preview");
-          findButton(ev).classList.remove("active");
         } else {
           this.target.parentElement.setAttribute("image-preview", "*");
-          findButton(ev).classList.add("active");
         }
       },
       accessKey: "KeyI",
     },
   };
-  #scrollToCaretDebounced = null;
   #renderMarkdownToHtmlDebounced = null;
 
-  HIDE_CARET_ON_CHANGE_FOR_MILLISECONDS = helper.isTouchDevice() ? false : 100;
+  HIDE_CARET_ON_CHANGE_FOR_MILLISECONDS = false;
 
   POSSIBLE_BLOCK_CLASSES = [
     "h1",
@@ -82,9 +74,6 @@ class FocusEditorCore {
       throw new Error("A target HTML element is required");
     }
     this.target = targetHTMLElement;
-    this.#scrollToCaretDebounced = helper.debounce(() => {
-      this.#scrollToCaret();
-    }, 400);
     this.#renderMarkdownToHtmlDebounced = helper.debounce(() => {
       const currentParagraph = helper.currentBlockWithCaret();
       if (currentParagraph) {
@@ -139,7 +128,6 @@ class FocusEditorCore {
       Cursor.setCurrentCursorPosition(cursor, this.target);
     }
     this.#addCssClassToBlockWithCaret();
-    this.#scrollToCaret();
   }
 
   /**
@@ -187,16 +175,20 @@ class FocusEditorCore {
     );
   }
 
-  #updateChildrenElementsWithMarkdownClasses /*removeHtmlEntities = false*/() {
+  #hasManyElements() {
+    return this.allChildren().length > 500;
+  }
+
+  #updateChildrenElementsWithMarkdownClasses() {
     let children = this.allChildren();
-    if (children.length > 500) {
-      if (!this._warnedAboutTooManyChildren) {
-        this._warnedAboutTooManyChildren = true;
-        console.warn("Too many child elements. Just updating visible elements");
-      }
-      this.#updateAllVisibleElements();
-      return;
-    }
+    // if (children.length > 500) {
+    //   if (!this._warnedAboutTooManyChildren) {
+    //     this._warnedAboutTooManyChildren = true;
+    //     console.warn("Too many child elements. Just updating visible elements");
+    //   }
+    //   this.#updateAllVisibleElements();
+    //   return;
+    // }
     this._warnedAboutTooManyChildren = false;
     md2html.addCodeBlockClasses(children);
     md2html.addParagraphClasses(children);
@@ -287,29 +279,10 @@ class FocusEditorCore {
     ) {
       current.innerHTML = md2html.EMPTY_LINE_HTML_PLACEHOLDER;
     }
-
-    if (
-      current.getBoundingClientRect().height <
-        this.target.parentElement.getBoundingClientRect().height &&
-      current.getBoundingClientRect().height < window.innerHeight
-    ) {
-      this.#scrollToCaret();
-    }
   }
 
-  #scrollToCaret() {
-    if (!this.#scroll.behavior || helper.isTouchDevice()) {
-      return;
-    }
-
-    // if (window.matchMedia('(prefers-reduced-motion: reduce)')) {
-    //   return;
-    // }
-
-    this.target.querySelector(".with-caret")?.scrollIntoView({
-      behavior: this.#scroll.behavior,
-      block: this.#scroll.block || "center",
-    });
+  set placeholder(placeholder) {
+    this.#placeholder = placeholder;
   }
 
   set tabSize(value) {
@@ -324,20 +297,6 @@ class FocusEditorCore {
     if (!value) {
       this.#tabSize = false;
     }
-  }
-
-  set scroll(value) {
-    if (!value) {
-      this.#scroll = {
-        behavior: null,
-        block: null,
-      };
-      return;
-    }
-    this.#scroll = {
-      behavior: value.split("|")[0],
-      block: value.split("|")[1],
-    };
   }
 
   set readonly(value) {
@@ -406,7 +365,6 @@ class FocusEditorCore {
 
   #onClick(event, editor) {
     this.#addCssClassToBlockWithCaret();
-    this.#scrollToCaretDebounced();
   }
 
   onScroll(event, editor) {
@@ -534,14 +492,6 @@ class FocusEditorCore {
 
     this.#addCssClassToBlockWithCaret();
 
-    if (helper.isFirefox()) {
-      if (event.key === "Enter") {
-        this.#scrollToCaretDebounced();
-      }
-    } else {
-      this.#scrollToCaretDebounced();
-    }
-
     if (!currentParagraph) {
       /**
        * Firefox Bug (3): When selecting text and clean it, the text might be outside of any div
@@ -621,6 +571,9 @@ class FocusEditorCore {
       return;
     }
 
+    if (this.#hasManyElements()) {
+      // return;
+    }
     md2html.addParagraphClasses([currentParagraph]);
     md2html.addCodeBlockClasses(this.allChildren());
 

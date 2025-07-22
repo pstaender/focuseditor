@@ -1,13 +1,14 @@
 # Focus Editor
 ## … for the focused editor
 
-[See the demo 🚀](https://pstaender.github.io/focuseditor/)
+[See the demo 🚀](https://unpkg.com/browser-focus-editor@latest/index.html)
 
 ### Features
 
-- distraction free (zen-mode)
-- zero(!) dependencies
-- lightweight: ~50Kbytes *uncompressed*, ~20Kbytes compressed,
+- distraction free **zen-mode**
+- zero dependencies
+- lightweight
+  - ~50Kbytes *un*compressed <-> ~20Kbytes compressed
 
 ### Usage
 
@@ -25,7 +26,7 @@
 </body>
 ```
 
-### Usage with replacing textareas
+### Replacing textareas with focus-editor
 
 ```html
 <head>
