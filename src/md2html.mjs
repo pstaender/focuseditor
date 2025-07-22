@@ -11,6 +11,7 @@ import * as helper from "./helper.mjs";
 export const EMPTY_LINE_HTML_PLACEHOLDER = `<br>`;
 
 export function innerTextToHtml(text) {
+  text = text.replace(/\r/g, "\n");
   const firstLine = text.split("\n").filter((t) => t.length > 0)[0];
   const initialSpace = firstLine
     ? firstLine.match(/^\s+/)

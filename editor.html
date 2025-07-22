@@ -11,7 +11,19 @@
     <main>
       <focus-editor class="indent-headings" autofocus spellcheck="false" hyphens="auto" tab-size="2" placeholder="Your text here…"></focus-editor>
       <nav>
-
+        <ul>
+          <li>
+            <button id="save" type="button" onclick="save()">Save</button>
+          </li>
+          <li>
+            <label for="remember">Remember</label>
+            <input type="checkbox" id="remember" checked>
+          </li>
+          <li>
+            <label for="hyphen">Hypens</label>
+            <input type="checkbox" id="hyphen" checked>
+          </li>
+        </ul>
       </nav>
     </main>
   </body>

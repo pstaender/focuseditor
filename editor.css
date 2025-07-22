@@ -10,12 +10,19 @@ body, html {
 main {
   display: flex;
   place-content: center;
+  position: relative;
+  nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+  }
 }
 
 focus-editor {
   padding: 1rem;
   padding-top: 2rem;
-  height: clac(100% - 3rem);
+  height: calc(100% - 3rem);
   width: 100%;
   max-width: 60rem;
   .block:last-child {

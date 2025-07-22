@@ -323,6 +323,28 @@ focus-editor[scroll] {
   }
 }
 
+focus-editor {
+  .block[data-placeholder] {
+    position: relative;
+    &:before {
+      content: attr(data-placeholder);
+      position: absolute;
+      top: 0;
+      left: calc(
+        0px + var(--editor-vertical-padding) +
+          calc(var(--space-left) * var(--margin-left-factor))
+      );
+      line-height: var(--line-height);
+      color: var(--color-grey);
+      font-weight: normal;
+      font-style: normal;
+    }
+  }
+  .block[data-placeholder] + .block[data-placeholder]:before {
+    display: none;
+  }
+}
+
 focus-editor[image-preview] {
   .link.image {
     span {

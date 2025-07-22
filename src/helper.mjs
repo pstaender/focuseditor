@@ -39,8 +39,8 @@ export function currentBlockWithCaret() {
 export function elementIsVisible(
   el,
   {
-    offsetTop = -3000,
-    offsetBottom = -3000,
+    offsetTop = -1000,
+    offsetBottom = -1000,
     offsetLeft = 0,
     offsetRight = 0,
   } = {},
