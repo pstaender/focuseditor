@@ -1,4 +1,4 @@
-import { init } from "./src/FocusEditor.mjs";
+import { init } from "./src/FocusEditor.mjs?v0.0.2";
 
 init();
 
