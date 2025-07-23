@@ -195,7 +195,7 @@ focus-editor {
       color: transparent;
       @media (hover) {
         &:hover {
-          color: currentColor;
+          color: var(--color-grey-lighter);
         }
       }
       &:focus, &.with-caret {
