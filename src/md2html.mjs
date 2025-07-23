@@ -11,6 +11,7 @@ import * as helper from "./helper.mjs";
 export const EMPTY_LINE_HTML_PLACEHOLDER = `<br>`;
 
 export function innerTextToHtml(text) {
+  text = text.replace(/\r/g, "\n");
   const firstLine = text.split("\n").filter((t) => t.length > 0)[0];
   const initialSpace = firstLine
     ? firstLine.match(/^\s+/)
@@ -60,7 +61,7 @@ export function addCodeBlockClasses(elements) {
       el.classList.remove(className),
     );
 
-    const l = el.innerText;
+    const l = el.textContent;
 
     if (l.trim() === "") {
       el.innerHTML = helper.whiteSpaceWorkaround();
@@ -70,7 +71,7 @@ export function addCodeBlockClasses(elements) {
       isCodeBlock = true;
       el.classList.add("code-block-start");
       codeBlocks = [];
-    } else if (l.match(/^\s*```\s*$/) && isCodeBlock) {
+    } else if (l.match(/^```$/) && isCodeBlock) {
       isCodeBlock = false;
       el.classList.add("code-block");
       el.classList.add("code-block-end");
@@ -82,7 +83,7 @@ export function addCodeBlockClasses(elements) {
       el.classList.add("code-block");
       if (el.innerHTML.match(/[<>]/)) {
         // remove html tags
-        el.innerText = el.innerText;
+        el.textContent = el.innerText;
       }
       codeBlocks.push(el);
     }
@@ -106,9 +107,9 @@ export function addParagraphClasses(elements) {
     helper.removeStyleAttributeRecursively(el);
 
     // remove new line at the beginning
-    el.innerText = el.innerText.replace(/^\n+/, '');
+    el.textContent = el.textContent.replace(/^\n+/, "");
     // add whitespace workaround
-    if (el.innerText.trim() === "") {
+    if (el.textContent.trim() === "") {
       el.innerHTML = helper.whiteSpaceWorkaround();
     }
 
@@ -124,24 +125,28 @@ export function addParagraphClasses(elements) {
       return;
     }
 
-    if (el.innerText.match(/^#{1,6}\s/)) {
-
-      el.classList.add(`h${el.innerText.match(/^(#{1,6})\s/)[1].length}`);
+    if (el.textContent.match(/^#{1,6}\s/)) {
+      let id = helper.slugify(el.textContent.replace(/^#{1,6}\s/, "").trim());
+      if (!document.getElementById(id)) {
+        el.id = id;
+      }
+      el.classList.add(`h${el.textContent.match(/^(#{1,6})\s/)[1].length}`);
       return;
     }
 
-    if (el.innerText.match(/^>{1,3}/)) {
+    if (el.textContent.match(/^>{1,3}/)) {
       el.classList.add(`blockquote`);
       el.classList.add(
-        `blockquote-${el.innerText.match(/^(>{1,3})/)[1].length}`,
+        `blockquote-${el.textContent.match(/^(>{1,3})/)[1].length}`,
       );
     }
 
-    if (el.innerText.match(/^---\s*$/)) {
-      el.classList.add(`hr`);
+    // <hr>
+    if (el.textContent.match(/^(-{3,}|\*{3,})\s*$/)) {
+      el.classList.add("hr");
     }
 
-    let html = el.innerText;
+    let html = el.textContent;
 
     html = html
       .split(/(`+[^\`]+?`+)/g)
@@ -159,7 +164,7 @@ export function addParagraphClasses(elements) {
 
         // find bold+italic
         html = html.replace(
-          /([\*\\]*)(\*{3}.+?\*{3})([\*]*)/g,
+          /([*\\]*)(\*{3}[^\s]+.*?\*{3})([*]*)/g,
           (...matches) => {
             if (matches[1] || matches[3]) {
               return matches[0];
@@ -168,31 +173,39 @@ export function addParagraphClasses(elements) {
           },
         );
 
-        // find italic
-        html = html.replace(
-          /([\*\\]*)(\*{1}.+?\*{1})([\*]*)/g,
-          (...matches) => {
+        // find *italic* / _italic_
+        html = html
+          .replace(/([*\\]*)(\*{1}[^\s]+.*?\*{1})([*]*)/g, (...matches) => {
             if (matches[1] || matches[3]) {
               return matches[0];
             }
             return `<em>${matches[2]}</em>`;
-          },
-        );
+          })
+          .replace(/([_\\]*)(_{1}[^\s]+.*?_{1})([_]*)/g, (...matches) => {
+            if (matches[1] || matches[3]) {
+              return matches[0];
+            }
+            return `<em>${matches[2]}</em>`;
+          });
 
-        // find bold text
-        html = html.replace(
-          /([\*\\]*)(\*\*.+?\*\*)([\*\\]*)/g,
-          (...matches) => {
+        // find **bold text** / __bold text__
+        html = html
+          .replace(/([*\\]*)(\*\*[^\s]+.*?\*\*)([*\\]*)/g, (...matches) => {
             if (matches[1] || matches[3]) {
               return matches[0];
             }
             return `<strong>${matches[2]}</strong>`;
-          },
-        );
+          })
+          .replace(/([_\\]*)(__[^\s]+.*?__)([_\\]*)/g, (...matches) => {
+            if (matches[1] || matches[3]) {
+              return matches[0];
+            }
+            return `<strong>${matches[2]}</strong>`;
+          });
 
         // find strike through text
         html = html.replace(
-          /([\~\\])*(\~\~[^~].+?\~\~)([\~])*/g,
+          /([~\\])*(~~[^~][^\s]+.*?~~)([~])*/g,
           (...matches) => {
             if (matches[1] || matches[3]) {
               return matches[0];
@@ -217,12 +230,16 @@ export function addParagraphClasses(elements) {
       el.innerHTML = html;
     }
 
-    if (el.innerText.trim() === "" && EMPTY_LINE_HTML_PLACEHOLDER) {
+    if (el.textContent.trim() === "" && EMPTY_LINE_HTML_PLACEHOLDER) {
       el.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
     }
     el.querySelectorAll("a.link[href]").forEach((el) => {
       el.addEventListener("dblclick", (ev) => {
-        if (ev.metaKey || ev.altKey ||/^http[s]*\:\/\//i.test(el.getAttribute('href'))) {
+        if (
+          ev.metaKey ||
+          ev.altKey ||
+          /^http[s]*\:\/\//i.test(el.getAttribute("href"))
+        ) {
           // open in new tab
           window.open(el.href, "_blank");
         } else {

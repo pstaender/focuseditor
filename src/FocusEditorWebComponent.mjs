@@ -38,8 +38,10 @@ class FocusEditorWebComponent extends HTMLElement {
     if (this.hasAttribute("autofocus")) {
       this.editor.focus = true;
     }
-    this.editor.scroll = this.getAttribute("scroll");
     this.editor.tabSize = this.getAttribute("tab-size");
+    if (this.hasAttribute("placeholder")) {
+      this.editor.placeholder = this.getAttribute("placeholder");
+    }
     this.addEventListener("input", () => this.#syncValueForTextareaElement());
     this.#syncValueForTextareaElement();
   }
@@ -67,9 +69,6 @@ class FocusEditorWebComponent extends HTMLElement {
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    if (name === "scroll") {
-      this.editor.scroll = newValue;
-    }
     if (name === "tab-size") {
       this.editor.tabSize = newValue;
     }
