@@ -84,7 +84,7 @@ class FocusEditorCore {
    * @param {string} text
    */
   replaceText(text) {
-    this.target.innerHTML = md2html.innerTextToHtml(text);
+    this.target.innerHTML = md2html.innerTextToHtml(text, document);
     this.#updateChildrenElementsWithMarkdownClasses();
     this.#addCssClassToBlockWithCaret();
     this.target.parentElement.scroll({ top: 0 });
@@ -161,6 +161,7 @@ class FocusEditorCore {
   #prepareTargetHTMLElement(text) {
     this.target.innerHTML = md2html.innerTextToHtml(
       helper.removeFirstLineBreak(text),
+      document
     );
     this.#updateChildrenElementsWithMarkdownClasses();
 
@@ -193,8 +194,8 @@ class FocusEditorCore {
     }
      */
     this._warnedAboutTooManyChildren = false;
-    md2html.addCodeBlockClasses(children);
-    md2html.addParagraphClasses(children);
+    md2html.addCodeBlockClasses(children, document);
+    md2html.addParagraphClasses(children, document);
 
     this.#updateAllVisibleElements();
   }
@@ -245,8 +246,8 @@ class FocusEditorCore {
 
   #updateAllVisibleElements() {
     const visibleElements = this.#visibleChildren();
-    md2html.addCodeBlockClasses(visibleElements);
-    md2html.addParagraphClasses(visibleElements);
+    md2html.addCodeBlockClasses(visibleElements, document);
+    md2html.addParagraphClasses(visibleElements, document);
   }
 
   #addCssClassToBlockWithCaret() {
@@ -567,8 +568,8 @@ class FocusEditorCore {
         this.__renderMarkdownToHtmlDebounced();
         return;
       }
-      md2html.addParagraphClasses([currentParagraph]);
-      md2html.addCodeBlockClasses(this.#visibleChildren());
+      md2html.addParagraphClasses([currentParagraph], document);
+      md2html.addCodeBlockClasses(this.#visibleChildren(), document);
 
       this.#updateAllVisibleElements();
       this.#restoreLastCaretPosition();
@@ -674,7 +675,7 @@ class FocusEditorCore {
       div.classList.add("block");
       this.target.appendChild(div);
       if (div.previousElementSibling) {
-        md2html.addParagraphClasses([div.previousElementSibling]);
+        md2html.addParagraphClasses([div.previousElementSibling], document);
       }
       this.#updateAllVisibleElements();
       return;
@@ -682,7 +683,7 @@ class FocusEditorCore {
 
     let last = this.target.querySelector(".block:last-child");
     last.innerText += char;
-    md2html.addParagraphClasses([last]);
+    md2html.addParagraphClasses([last], document);
   }
 }
 

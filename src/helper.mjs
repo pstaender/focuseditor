@@ -106,6 +106,13 @@ export function removeStyleAttributeRecursively(el) {
   el.querySelectorAll("[style]").forEach((el) => el.removeAttribute("style"));
 }
 
+export function stripHtml(html)
+{
+   let tmp = document.createElement("DIV");
+   tmp.innerHTML = html;
+   return tmp.textContent || tmp.innerText || "";
+}
+
 export function htmlToText(html) {
   const div = document.createElement("div");
   div.innerHTML = html;

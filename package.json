@@ -1,13 +1,13 @@
 {
   "name": "browser-focus-editor",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "focus editor for the focused editor",
   "license": "AGPL-3.0-only",
   "author": "Philipp Staender <pstaender@mailbox.org>",
   "type": "module",
   "main": "src/FocusEditor.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest --environment=jsdom",
     "dev": "vite .",
     "build": "rm -rf ./cjs && mkdir -p ./cjs && npx postcss src/css/*.css --use autoprefixer --no-map  -d cjs/ && esbuild src/FocusEditor.mjs --bundle --outfile=cjs/FocusEditor.js; npm run docs",
     "server": "npx http-server .",
@@ -25,9 +25,13 @@
     "postcss": "^8.5.6",
     "postcss-cli": "^11.0.1",
     "tidy-jsdoc": "^1.4.1",
-    "vite": "6.3.5"
+    "vite": "6.3.5",
+    "vitest": "^3.2.4"
   },
   "browserslist": [
     "defaults"
-  ]
+  ],
+  "dependencies": {
+    "jsdom": "^26.1.0"
+  }
 }

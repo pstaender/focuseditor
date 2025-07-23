@@ -10,7 +10,7 @@ import * as helper from "./helper.mjs";
 
 export const EMPTY_LINE_HTML_PLACEHOLDER = `<br>`;
 
-export function innerTextToHtml(text) {
+export function innerTextToHtml(text, document) {
   text = text.replace(/\r/g, "\n");
   const firstLine = text.split("\n").filter((t) => t.length > 0)[0];
   const initialSpace = firstLine
@@ -30,9 +30,10 @@ export function innerTextToHtml(text) {
       return `<div class="block">&nbsp;</div>`;
     }
 
+
     const el = document.createElement("div");
 
-    el.innerText = l;
+    el.textContent = l;
     return el.outerHTML.replace(/\s{2}/g, "&nbsp;&nbsp;");
   });
 
@@ -42,7 +43,7 @@ export function innerTextToHtml(text) {
   return div.innerHTML;
 }
 
-export function addCodeBlockClasses(elements) {
+export function addCodeBlockClasses(elements, document) {
   let isCodeBlock = false;
   let codeBlocks = [];
 
@@ -101,7 +102,84 @@ export function addCodeBlockClasses(elements) {
   }
 }
 
-export function addParagraphClasses(elements) {
+function inlineMarkdown(text) {
+    if (
+      text.startsWith("`") &&
+      text.endsWith("`") &&
+      text[1] != "`" &&
+      text !== "`"
+    ) {
+      return `<code>${text}</code>`;
+    }
+
+    let html = helper.escapeHTMLEntities(text);
+
+    // find bold+italic
+    html = html.replace(
+      /([*\\]*)(\*{3}[^\s]+.*?\*{3})([*]*)/g,
+      (...matches) => {
+        if (matches[1] || matches[3]) {
+          return matches[0];
+        }
+        return `<strong><em>${matches[2]}</em></strong>`;
+      },
+    );
+
+    // find *italic* / _italic_
+    html = html
+      .replace(/([*\\]*)(\*{1}[^\s]+.*?\*{1})([*]*)/g, (...matches) => {
+        if (matches[1] || matches[3]) {
+          return matches[0];
+        }
+        return `<em>${matches[2]}</em>`;
+      })
+      .replace(/([_\\]*)(_{1}[^\s]+.*?_{1})([_]*)/g, (...matches) => {
+        if (matches[1] || matches[3]) {
+          return matches[0];
+        }
+        return `<em>${matches[2]}</em>`;
+      });
+
+    // find **bold text** / __bold text__
+    html = html
+      .replace(/([*\\]*)(\*\*[^\s]+.*?\*\*)([*\\]*)/g, (...matches) => {
+        if (matches[1] || matches[3]) {
+          return matches[0];
+        }
+        return `<strong>${matches[2]}</strong>`;
+      })
+      .replace(/([_\\]*)(__[^\s]+.*?__)([_\\]*)/g, (...matches) => {
+        if (matches[1] || matches[3]) {
+          return matches[0];
+        }
+        return `<strong>${matches[2]}</strong>`;
+      });
+
+    // find strike through text
+    html = html.replace(
+      /([~\\])*(~~[^~][^\s]+.*?~~)([~])*/g,
+      (...matches) => {
+        if (matches[1] || matches[3]) {
+          return matches[0];
+        }
+        return `<s>${matches[2]}</s>`;
+      },
+    );
+
+    // find links
+    html = html.replace(/(\!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
+      let classes = ["link", matches[1] ? "image" : ""]
+        .filter((v) => !!v)
+        .join(" ");
+      let url = helper.stripHtml(matches[3]);
+      return `<a href="${url}" style="--url: url(${url})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${url})</span></a>`;
+    });
+
+    return html;
+
+}
+
+export function addParagraphClasses(elements, document) {
   // TODO: check for trim
   elements.forEach((el) => {
     helper.removeStyleAttributeRecursively(el);
@@ -130,6 +208,7 @@ export function addParagraphClasses(elements) {
       if (!document.getElementById(id)) {
         el.id = id;
       }
+      el.innerHTML = inlineMarkdown(el.textContent);
       el.classList.add(`h${el.textContent.match(/^(#{1,6})\s/)[1].length}`);
       return;
     }
@@ -146,85 +225,20 @@ export function addParagraphClasses(elements) {
       el.classList.add("hr");
     }
 
-    let html = el.textContent;
+    let html = el.innerHTML;
+    html = html.replace(/(\!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
+      let classes = ["link", matches[1] ? "image" : ""]
+        .filter((v) => !!v)
+        .join(" ");
+      return `<a href="${matches[3]}" style="--url: url(${matches[3]})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${matches[3]})</span></a>`;
+    });
 
-    html = html
+    // previous way:
+    html = el.textContent
       .split(/(`+[^\`]+?`+)/g)
-      .map((text) => {
-        if (
-          text.startsWith("`") &&
-          text.endsWith("`") &&
-          text[1] != "`" &&
-          text !== "`"
-        ) {
-          return `<code>${text}</code>`;
-        }
-
-        let html = helper.escapeHTMLEntities(text);
-
-        // find bold+italic
-        html = html.replace(
-          /([*\\]*)(\*{3}[^\s]+.*?\*{3})([*]*)/g,
-          (...matches) => {
-            if (matches[1] || matches[3]) {
-              return matches[0];
-            }
-            return `<strong><em>${matches[2]}</em></strong>`;
-          },
-        );
-
-        // find *italic* / _italic_
-        html = html
-          .replace(/([*\\]*)(\*{1}[^\s]+.*?\*{1})([*]*)/g, (...matches) => {
-            if (matches[1] || matches[3]) {
-              return matches[0];
-            }
-            return `<em>${matches[2]}</em>`;
-          })
-          .replace(/([_\\]*)(_{1}[^\s]+.*?_{1})([_]*)/g, (...matches) => {
-            if (matches[1] || matches[3]) {
-              return matches[0];
-            }
-            return `<em>${matches[2]}</em>`;
-          });
-
-        // find **bold text** / __bold text__
-        html = html
-          .replace(/([*\\]*)(\*\*[^\s]+.*?\*\*)([*\\]*)/g, (...matches) => {
-            if (matches[1] || matches[3]) {
-              return matches[0];
-            }
-            return `<strong>${matches[2]}</strong>`;
-          })
-          .replace(/([_\\]*)(__[^\s]+.*?__)([_\\]*)/g, (...matches) => {
-            if (matches[1] || matches[3]) {
-              return matches[0];
-            }
-            return `<strong>${matches[2]}</strong>`;
-          });
-
-        // find strike through text
-        html = html.replace(
-          /([~\\])*(~~[^~][^\s]+.*?~~)([~])*/g,
-          (...matches) => {
-            if (matches[1] || matches[3]) {
-              return matches[0];
-            }
-            return `<s>${matches[2]}</s>`;
-          },
-        );
-
-        // find links
-        html = html.replace(/(\!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
-          let classes = ["link", matches[1] ? "image" : ""]
-            .filter((v) => !!v)
-            .join(" ");
-          return `<a href="${matches[3]}" style="--url: url(${matches[3]})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${matches[3]})</span></a>`;
-        });
-
-        return html;
-      })
+      .map(inlineMarkdown)
       .join("");
+    // previous way
 
     if (html !== el.innerHTML) {
       el.innerHTML = html;
