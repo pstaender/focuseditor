@@ -69,6 +69,11 @@
     el.removeAttribute("style");
     el.querySelectorAll("[style]").forEach((el2) => el2.removeAttribute("style"));
   }
+  function stripHtml(html) {
+    let tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  }
   function debounce(func, wait, immediate) {
     let timeout;
     return function() {
@@ -96,7 +101,7 @@
 
   // src/md2html.mjs
   var EMPTY_LINE_HTML_PLACEHOLDER = `<br>`;
-  function innerTextToHtml(text) {
+  function innerTextToHtml(text, document2) {
     text = text.replace(/\r/g, "\n");
     const firstLine = text.split("\n").filter((t) => t.length > 0)[0];
     const initialSpace = firstLine ? firstLine.match(/^\s+/) ? firstLine.match(/^\s+/)[0]?.length : 0 : 0;
@@ -108,20 +113,20 @@
       if (l.trim() === "") {
         return `<div class="block">&nbsp;</div>`;
       }
-      const el = document.createElement("div");
-      el.innerText = l;
+      const el = document2.createElement("div");
+      el.textContent = l;
       return el.outerHTML.replace(/\s{2}/g, "&nbsp;&nbsp;");
     });
-    let div = document.createElement("div");
+    let div = document2.createElement("div");
     div.innerHTML = lines.join("\n");
     return div.innerHTML;
   }
-  function addCodeBlockClasses(elements) {
+  function addCodeBlockClasses(elements, document2) {
     let isCodeBlock = false;
     let codeBlocks = [];
     elements.forEach((el) => {
       if (el.tagName === "BR") {
-        const div = document.createElement("div");
+        const div = document2.createElement("div");
         div.classList.add("block");
         if (isCodeBlock) {
           div.classList.add("code-block");
@@ -166,7 +171,59 @@
       });
     }
   }
-  function addParagraphClasses(elements) {
+  function inlineMarkdown(text) {
+    if (text.startsWith("`") && text.endsWith("`") && text[1] != "`" && text !== "`") {
+      return `<code>${text}</code>`;
+    }
+    let html = escapeHTMLEntities(text);
+    html = html.replace(
+      /([*\\]*)(\*{3}[^\s]+.*?\*{3})([*]*)/g,
+      (...matches) => {
+        if (matches[1] || matches[3]) {
+          return matches[0];
+        }
+        return `<strong><em>${matches[2]}</em></strong>`;
+      }
+    );
+    html = html.replace(/([*\\]*)(\*{1}[^\s]+.*?\*{1})([*]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<em>${matches[2]}</em>`;
+    }).replace(/([_\\]*)(_{1}[^\s]+.*?_{1})([_]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<em>${matches[2]}</em>`;
+    });
+    html = html.replace(/([*\\]*)(\*\*[^\s]+.*?\*\*)([*\\]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<strong>${matches[2]}</strong>`;
+    }).replace(/([_\\]*)(__[^\s]+.*?__)([_\\]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<strong>${matches[2]}</strong>`;
+    });
+    html = html.replace(
+      /([~\\])*(~~[^~][^\s]+.*?~~)([~])*/g,
+      (...matches) => {
+        if (matches[1] || matches[3]) {
+          return matches[0];
+        }
+        return `<s>${matches[2]}</s>`;
+      }
+    );
+    html = html.replace(/(\!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
+      let classes = ["link", matches[1] ? "image" : ""].filter((v) => !!v).join(" ");
+      let url = stripHtml(matches[3]);
+      return `<a href="${url}" style="--url: url(${url})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${url})</span></a>`;
+    });
+    return html;
+  }
+  function addParagraphClasses(elements, document2) {
     elements.forEach((el) => {
       removeStyleAttributeRecursively(el);
       el.textContent = el.textContent.replace(/^\n+/, "");
@@ -184,9 +241,10 @@
       }
       if (el.textContent.match(/^#{1,6}\s/)) {
         let id = slugify(el.textContent.replace(/^#{1,6}\s/, "").trim());
-        if (!document.getElementById(id)) {
+        if (!document2.getElementById(id)) {
           el.id = id;
         }
+        el.innerHTML = inlineMarkdown(el.textContent);
         el.classList.add(`h${el.textContent.match(/^(#{1,6})\s/)[1].length}`);
         return;
       }
@@ -199,58 +257,12 @@
       if (el.textContent.match(/^(-{3,}|\*{3,})\s*$/)) {
         el.classList.add("hr");
       }
-      let html = el.textContent;
-      html = html.split(/(`+[^\`]+?`+)/g).map((text) => {
-        if (text.startsWith("`") && text.endsWith("`") && text[1] != "`" && text !== "`") {
-          return `<code>${text}</code>`;
-        }
-        let html2 = escapeHTMLEntities(text);
-        html2 = html2.replace(
-          /([*\\]*)(\*{3}[^\s]+.*?\*{3})([*]*)/g,
-          (...matches) => {
-            if (matches[1] || matches[3]) {
-              return matches[0];
-            }
-            return `<strong><em>${matches[2]}</em></strong>`;
-          }
-        );
-        html2 = html2.replace(/([*\\]*)(\*{1}[^\s]+.*?\*{1})([*]*)/g, (...matches) => {
-          if (matches[1] || matches[3]) {
-            return matches[0];
-          }
-          return `<em>${matches[2]}</em>`;
-        }).replace(/([_\\]*)(_{1}[^\s]+.*?_{1})([_]*)/g, (...matches) => {
-          if (matches[1] || matches[3]) {
-            return matches[0];
-          }
-          return `<em>${matches[2]}</em>`;
-        });
-        html2 = html2.replace(/([*\\]*)(\*\*[^\s]+.*?\*\*)([*\\]*)/g, (...matches) => {
-          if (matches[1] || matches[3]) {
-            return matches[0];
-          }
-          return `<strong>${matches[2]}</strong>`;
-        }).replace(/([_\\]*)(__[^\s]+.*?__)([_\\]*)/g, (...matches) => {
-          if (matches[1] || matches[3]) {
-            return matches[0];
-          }
-          return `<strong>${matches[2]}</strong>`;
-        });
-        html2 = html2.replace(
-          /([~\\])*(~~[^~][^\s]+.*?~~)([~])*/g,
-          (...matches) => {
-            if (matches[1] || matches[3]) {
-              return matches[0];
-            }
-            return `<s>${matches[2]}</s>`;
-          }
-        );
-        html2 = html2.replace(/(\!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
-          let classes = ["link", matches[1] ? "image" : ""].filter((v) => !!v).join(" ");
-          return `<a href="${matches[3]}" style="--url: url(${matches[3]})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${matches[3]})</span></a>`;
-        });
-        return html2;
-      }).join("");
+      let html = el.innerHTML;
+      html = html.replace(/(\!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
+        let classes = ["link", matches[1] ? "image" : ""].filter((v) => !!v).join(" ");
+        return `<a href="${matches[3]}" style="--url: url(${matches[3]})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${matches[3]})</span></a>`;
+      });
+      html = el.textContent.split(/(`+[^\`]+?`+)/g).map(inlineMarkdown).join("");
       if (html !== el.innerHTML) {
         el.innerHTML = html;
       }
@@ -461,7 +473,7 @@
      * @param {string} text
      */
     replaceText(text) {
-      this.target.innerHTML = innerTextToHtml(text);
+      this.target.innerHTML = innerTextToHtml(text, document);
       this.#updateChildrenElementsWithMarkdownClasses();
       this.#addCssClassToBlockWithCaret();
       this.target.parentElement.scroll({ top: 0 });
@@ -523,7 +535,8 @@
     /* this should only be called once (maybe make it idempotent?) */
     #prepareTargetHTMLElement(text) {
       this.target.innerHTML = innerTextToHtml(
-        removeFirstLineBreak(text)
+        removeFirstLineBreak(text),
+        document
       );
       this.#updateChildrenElementsWithMarkdownClasses();
       this.target.classList.add("focus-editor");
@@ -543,8 +556,8 @@
     #updateChildrenElementsWithMarkdownClasses() {
       let children = this.allChildren();
       this._warnedAboutTooManyChildren = false;
-      addCodeBlockClasses(children);
-      addParagraphClasses(children);
+      addCodeBlockClasses(children, document);
+      addParagraphClasses(children, document);
       this.#updateAllVisibleElements();
     }
     #storeEditorCaretPosition() {
@@ -582,8 +595,8 @@
     }
     #updateAllVisibleElements() {
       const visibleElements = this.#visibleChildren();
-      addCodeBlockClasses(visibleElements);
-      addParagraphClasses(visibleElements);
+      addCodeBlockClasses(visibleElements, document);
+      addParagraphClasses(visibleElements, document);
     }
     #addCssClassToBlockWithCaret() {
       let current = null;
@@ -815,8 +828,8 @@
           this.__renderMarkdownToHtmlDebounced();
           return;
         }
-        addParagraphClasses([currentParagraph]);
-        addCodeBlockClasses(this.#visibleChildren());
+        addParagraphClasses([currentParagraph], document);
+        addCodeBlockClasses(this.#visibleChildren(), document);
         this.#updateAllVisibleElements();
         this.#restoreLastCaretPosition();
       }
@@ -895,14 +908,14 @@
         div.classList.add("block");
         this.target.appendChild(div);
         if (div.previousElementSibling) {
-          addParagraphClasses([div.previousElementSibling]);
+          addParagraphClasses([div.previousElementSibling], document);
         }
         this.#updateAllVisibleElements();
         return;
       }
       let last = this.target.querySelector(".block:last-child");
       last.innerText += char;
-      addParagraphClasses([last]);
+      addParagraphClasses([last], document);
     }
   };
   var FocusEditorCore_default = FocusEditorCore;

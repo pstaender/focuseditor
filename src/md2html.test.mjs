@@ -11,8 +11,8 @@ function createDocument() {
 
 /**
  * Trims whitespaces from a string
- * @param {*} str
- * @returns
+ * @param {string} str
+ * @returns {string}
  */
 function trws(str) {
   return str
