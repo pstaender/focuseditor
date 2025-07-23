@@ -90,6 +90,9 @@ nav:has(+ #toggle-menu-button #toggle-menu:checked) {
   + focus-editor + nav + #toggle-menu-button #toggle-menu:checked
 ) {
   visibility: hidden;
+  @media only screen and (max-width: 768px) {
+    display: none;
+  }
 }
 
 #toggle-menu-button {
@@ -124,9 +127,8 @@ nav:has(+ #toggle-menu-button #toggle-menu:checked) {
 
 focus-editor {
   padding: 1rem;
-  /* padding-top: 2rem; */
   height: calc(100% - 3rem);
-  width: 100%;
+  width: calc(100% - 2rem);
   max-width: 60rem;
   margin: 0 auto;
   .block:last-child {

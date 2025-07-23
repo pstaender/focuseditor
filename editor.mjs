@@ -10,6 +10,16 @@ let localStorage =
     : window.sessionStorage;
 const focusEditor = document.querySelector("focus-editor");
 
+/* this is a hard reset option to break the loop:
+ * For the case that the editor is not responding
+ * and restores a broken state from session storage
+ */
+if (window.location.hash === "#__force_new__") {
+  window.localStorage.clear();
+  window.newFile();
+  window.location.hash = "#__editor_reset_successful__";
+}
+
 window.newFile = () => {
   localStorage.clear();
   focusEditor.value = "";
@@ -23,12 +33,6 @@ window.setFilename = (filename) => {
   document.getElementById("filename").value = filename;
   document.getElementById("filename").dispatchEvent(new Event("change"));
 };
-
-if (window.location.hash === "#new") {
-  window.localStorage.clear();
-  window.newFile();
-  window.location.hash = "#reloaded";
-}
 
 function removeWordWrap(text, maxLength = null, autodetect = false) {
   if (!maxLength) {
@@ -150,6 +154,13 @@ document
           focusEditor.setAttribute("hyphens", "auto");
         } else {
           focusEditor.removeAttribute("hyphens");
+        }
+      }
+      if (input.id === "image-preview") {
+        if (input.checked) {
+          focusEditor.setAttribute("image-preview", "auto");
+        } else {
+          focusEditor.removeAttribute("image-preview");
         }
       }
       localStorage.setItem(`${localStorageKey}-${input.id}`, input.checked);
