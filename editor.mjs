@@ -3,6 +3,7 @@ import { init } from "./src/FocusEditor.mjs";
 init();
 
 const localStorageKey = "focus-editor-text";
+
 let localStorage =
   window.localStorage.getItem(`${localStorageKey}-remember`) === "true"
     ? window.localStorage
@@ -18,9 +19,15 @@ window.newFile = () => {
   document.getElementById("filename").dispatchEvent(new Event("change"));
 };
 
+window.setFilename = (filename) => {
+  document.getElementById("filename").value = filename;
+  document.getElementById("filename").dispatchEvent(new Event("change"));
+};
+
 if (window.location.hash === "#new") {
   window.localStorage.clear();
   window.newFile();
+  window.location.hash = "#reloaded";
 }
 
 function removeWordWrap(text, maxLength = null, autodetect = false) {
@@ -77,11 +84,15 @@ focusEditor.addEventListener("drop", (event) => {
   event.preventDefault();
   const file = event.dataTransfer.files[0];
   const reader = new FileReader();
-  document.getElementById('filename').value = file.name || 'import.txt';
+  window.setFilename(file.name || "import.txt");
   reader.onload = (e) => {
     displayText(e.target.result);
   };
   reader.readAsText(file);
+});
+
+focusEditor.addEventListener("input", (ev) => {
+  rememberText();
 });
 
 window.addEventListener("keydown", (ev) => {
@@ -94,10 +105,19 @@ window.addEventListener("keydown", (ev) => {
   ];
   if (ev.ctrlKey && ev.altKey && ev.shiftKey && /^Digit\d+$/.test(ev.code)) {
     // load txt from
+    const url = urls[Number(ev.code.replace("Digit", "")) - 1];
     ev.preventDefault();
-    fetch(urls[Number(ev.code.replace("Digit", "")) - 1])
+    fetch(url)
       .then((response) => response.text())
-      .then((text) => displayText(text));
+      .then((text) => {
+        displayText(text);
+        window.setFilename(decodeURI(url.split("/").at(-1) || "demo.txt"));
+      });
+    return;
+  }
+
+  if ((ev.ctrlKey || ev.metaKey) && ev.key === "s") {
+    window.save();
   }
 });
 

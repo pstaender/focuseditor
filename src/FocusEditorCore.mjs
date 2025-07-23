@@ -563,7 +563,7 @@ class FocusEditorCore {
           this.#storeLastCaretPosition();
           this.#updateAllVisibleElements();
           this.#restoreLastCaretPosition();
-        }, Math.round(this.allChildren().length / 2));
+        }, 500);
         this.__renderMarkdownToHtmlDebounced();
         return;
       }
@@ -601,7 +601,7 @@ class FocusEditorCore {
     const insertedElementText = current.innerText;
     const previousText = current.previousSibling.innerText;
     const lineBeginsWithUnorderedList =
-      /^(\s*\-\s+|\s*\*\s+|\s*•\s+|\s*\*\s+|\s*\+\s+|\>+\s*)(.*)$/;
+      /^(\s*-\s+|\s*\*\s+|\s*•\s+|\s*\*\s+|\s*\+\s+|\>+\s*)(.*)$/;
     const lineBeginsWithOrderedList = /^(\s*)(\d+)(\.|\.\))\s.+/;
 
     let matches = previousText.match(lineBeginsWithUnorderedList);

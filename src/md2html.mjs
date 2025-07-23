@@ -61,7 +61,7 @@ export function addCodeBlockClasses(elements) {
       el.classList.remove(className),
     );
 
-    const l = el.innerText;
+    const l = el.textContent;
 
     if (l.trim() === "") {
       el.innerHTML = helper.whiteSpaceWorkaround();
@@ -83,7 +83,7 @@ export function addCodeBlockClasses(elements) {
       el.classList.add("code-block");
       if (el.innerHTML.match(/[<>]/)) {
         // remove html tags
-        el.innerText = el.innerText;
+        el.textContent = el.innerText;
       }
       codeBlocks.push(el);
     }
@@ -107,9 +107,9 @@ export function addParagraphClasses(elements) {
     helper.removeStyleAttributeRecursively(el);
 
     // remove new line at the beginning
-    el.innerText = el.innerText.replace(/^\n+/, "");
+    el.textContent = el.textContent.replace(/^\n+/, "");
     // add whitespace workaround
-    if (el.innerText.trim() === "") {
+    if (el.textContent.trim() === "") {
       el.innerHTML = helper.whiteSpaceWorkaround();
     }
 
@@ -125,28 +125,28 @@ export function addParagraphClasses(elements) {
       return;
     }
 
-    if (el.innerText.match(/^#{1,6}\s/)) {
-      let id = helper.slugify(el.innerText.replace(/^#{1,6}\s/, "").trim());
+    if (el.textContent.match(/^#{1,6}\s/)) {
+      let id = helper.slugify(el.textContent.replace(/^#{1,6}\s/, "").trim());
       if (!document.getElementById(id)) {
         el.id = id;
       }
-      el.classList.add(`h${el.innerText.match(/^(#{1,6})\s/)[1].length}`);
+      el.classList.add(`h${el.textContent.match(/^(#{1,6})\s/)[1].length}`);
       return;
     }
 
-    if (el.innerText.match(/^>{1,3}/)) {
+    if (el.textContent.match(/^>{1,3}/)) {
       el.classList.add(`blockquote`);
       el.classList.add(
-        `blockquote-${el.innerText.match(/^(>{1,3})/)[1].length}`,
+        `blockquote-${el.textContent.match(/^(>{1,3})/)[1].length}`,
       );
     }
 
     // <hr>
-    if (el.innerText.match(/^(-{3,}|\*{3,})\s*$/)) {
+    if (el.textContent.match(/^(-{3,}|\*{3,})\s*$/)) {
       el.classList.add("hr");
     }
 
-    let html = el.innerText;
+    let html = el.textContent;
 
     html = html
       .split(/(`+[^\`]+?`+)/g)
@@ -230,7 +230,7 @@ export function addParagraphClasses(elements) {
       el.innerHTML = html;
     }
 
-    if (el.innerText.trim() === "" && EMPTY_LINE_HTML_PLACEHOLDER) {
+    if (el.textContent.trim() === "" && EMPTY_LINE_HTML_PLACEHOLDER) {
       el.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
     }
     el.querySelectorAll("a.link[href]").forEach((el) => {

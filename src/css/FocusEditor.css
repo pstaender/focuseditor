@@ -192,7 +192,15 @@ focus-editor {
     }
     .hr {
       position: relative;
-      color: var(--color-grey-lighter);
+      color: transparent;
+      @media (hover) {
+        &:hover {
+          color: currentColor;
+        }
+      }
+      &:focus, &.with-caret {
+        color: var(--color-grey-lighter);
+      }
       &:before {
         content: "";
         display: block;
