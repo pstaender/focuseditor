@@ -24,8 +24,8 @@ focus-editor {
   --border-radius: 4px;
   --space-left: 0px;
   --margin-left-factor: 0;
-  --editor-vertical-padding: 0;
-  --editor-horizontal-padding: 0;
+  --editor-vertical-padding: 0px;
+  --editor-horizontal-padding: 0px;
 
   &.indent-headings,
   &.zen-mode {
@@ -151,9 +151,6 @@ focus-editor {
     .h5 {
       margin-left: calc(var(--margin-left-factor) * -0.91 * var(--space-left));
     }
-    .h6 {
-      /* text-transform: uppercase; */
-    }
     .blockquote {
       background-color: var(--color-grey-very-light);
       margin-bottom: 0;
@@ -195,12 +192,21 @@ focus-editor {
     }
     .hr {
       position: relative;
-      &:after {
+      color: transparent;
+      @media (hover) {
+        &:hover {
+          color: currentColor;
+        }
+      }
+      &:focus, &.with-caret {
+        color: var(--color-grey-lighter);
+      }
+      &:before {
         content: "";
         display: block;
         height: 3px;
-        background: var(--color-grey-light);
-        top: 50%;
+        background: color-mix(in srgb, var(--color-grey) 30%, transparent);
+        top: calc(50% - 0.7px);
         position: absolute;
         right: 0;
         width: calc(100% - var(--space-left));
@@ -323,6 +329,28 @@ focus-editor[hyphens] {
 focus-editor[scroll] {
   .focus-editor .block:last-child {
     margin-bottom: 50%;
+  }
+}
+
+focus-editor {
+  .block[data-placeholder] {
+    position: relative;
+    &:before {
+      content: attr(data-placeholder);
+      position: absolute;
+      top: 0;
+      left: calc(
+        0px + var(--editor-vertical-padding) +
+          calc(var(--space-left) * var(--margin-left-factor))
+      );
+      line-height: var(--line-height);
+      color: var(--color-grey);
+      font-weight: normal;
+      font-style: normal;
+    }
+  }
+  .block[data-placeholder] + .block[data-placeholder]:before {
+    display: none;
   }
 }
 

@@ -27,8 +27,8 @@
     return currentElementWithCaret().closest(".block");
   }
   function elementIsVisible(el, {
-    offsetTop = -3e3,
-    offsetBottom = -3e3,
+    offsetTop = -1e3,
+    offsetBottom = -1e3,
     offsetLeft = 0,
     offsetRight = 0
   } = {}) {
@@ -40,9 +40,6 @@
   }
   function isFirefox() {
     return /firefox/i.test(navigator.userAgent);
-  }
-  function isTouchDevice() {
-    return "ontouchstart" in window || navigator.maxTouchPoints;
   }
   function whiteSpaceWorkaround() {
     return isFirefox() ? "<br>" : "";
@@ -85,10 +82,22 @@
       if (immediate && !timeout) func.apply(context, args);
     };
   }
+  function slugify(str) {
+    str = str.replace(/^\s+|\s+$/g, "");
+    str = str.toLowerCase();
+    var from = "\xE0\xE1\xE4\xE2\xE8\xE9\xEB\xEA\xEC\xED\xEF\xEE\xF2\xF3\xF6\xF4\xF9\xFA\xFC\xFB\xF1\xE7\xB7/_,:;";
+    var to = "aaaaeeeeiiiioooouuuunc------";
+    for (var i = 0, l = from.length; i < l; i++) {
+      str = str.replace(new RegExp(from.charAt(i), "g"), to.charAt(i));
+    }
+    str = str.replace(/[^a-z0-9 -]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
+    return str;
+  }
 
   // src/md2html.mjs
   var EMPTY_LINE_HTML_PLACEHOLDER = `<br>`;
   function innerTextToHtml(text) {
+    text = text.replace(/\r/g, "\n");
     const firstLine = text.split("\n").filter((t) => t.length > 0)[0];
     const initialSpace = firstLine ? firstLine.match(/^\s+/) ? firstLine.match(/^\s+/)[0]?.length : 0 : 0;
     const lines = text.split("\n").map((l) => {
@@ -124,7 +133,7 @@
       ["code-block", "code-block-start", "code-block-end"].forEach(
         (className) => el.classList.remove(className)
       );
-      const l = el.innerText;
+      const l = el.textContent;
       if (l.trim() === "") {
         el.innerHTML = whiteSpaceWorkaround();
       }
@@ -132,7 +141,7 @@
         isCodeBlock = true;
         el.classList.add("code-block-start");
         codeBlocks = [];
-      } else if (l.match(/^\s*```\s*$/) && isCodeBlock) {
+      } else if (l.match(/^```$/) && isCodeBlock) {
         isCodeBlock = false;
         el.classList.add("code-block");
         el.classList.add("code-block-end");
@@ -141,7 +150,7 @@
         el.innerHTML = el.innerHTML.replace(/\s/g, "&nbsp;");
         el.classList.add("code-block");
         if (el.innerHTML.match(/[<>]/)) {
-          el.innerText = el.innerText;
+          el.textContent = el.innerText;
         }
         codeBlocks.push(el);
       }
@@ -160,8 +169,8 @@
   function addParagraphClasses(elements) {
     elements.forEach((el) => {
       removeStyleAttributeRecursively(el);
-      el.innerText = el.innerText.replace(/^\n+/, "");
-      if (el.innerText.trim() === "") {
+      el.textContent = el.textContent.replace(/^\n+/, "");
+      if (el.textContent.trim() === "") {
         el.innerHTML = whiteSpaceWorkaround();
       }
       ["h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "hr"].forEach(
@@ -173,27 +182,31 @@
       if (!el.innerHTML) {
         return;
       }
-      if (el.innerText.match(/^#{1,6}\s/)) {
-        el.classList.add(`h${el.innerText.match(/^(#{1,6})\s/)[1].length}`);
+      if (el.textContent.match(/^#{1,6}\s/)) {
+        let id = slugify(el.textContent.replace(/^#{1,6}\s/, "").trim());
+        if (!document.getElementById(id)) {
+          el.id = id;
+        }
+        el.classList.add(`h${el.textContent.match(/^(#{1,6})\s/)[1].length}`);
         return;
       }
-      if (el.innerText.match(/^>{1,3}/)) {
+      if (el.textContent.match(/^>{1,3}/)) {
         el.classList.add(`blockquote`);
         el.classList.add(
-          `blockquote-${el.innerText.match(/^(>{1,3})/)[1].length}`
+          `blockquote-${el.textContent.match(/^(>{1,3})/)[1].length}`
         );
       }
-      if (el.innerText.match(/^---\s*$/)) {
-        el.classList.add(`hr`);
+      if (el.textContent.match(/^(-{3,}|\*{3,})\s*$/)) {
+        el.classList.add("hr");
       }
-      let html = el.innerText;
+      let html = el.textContent;
       html = html.split(/(`+[^\`]+?`+)/g).map((text) => {
         if (text.startsWith("`") && text.endsWith("`") && text[1] != "`" && text !== "`") {
           return `<code>${text}</code>`;
         }
         let html2 = escapeHTMLEntities(text);
         html2 = html2.replace(
-          /([\*\\]*)(\*{3}.+?\*{3})([\*]*)/g,
+          /([*\\]*)(\*{3}[^\s]+.*?\*{3})([*]*)/g,
           (...matches) => {
             if (matches[1] || matches[3]) {
               return matches[0];
@@ -201,26 +214,30 @@
             return `<strong><em>${matches[2]}</em></strong>`;
           }
         );
-        html2 = html2.replace(
-          /([\*\\]*)(\*{1}.+?\*{1})([\*]*)/g,
-          (...matches) => {
-            if (matches[1] || matches[3]) {
-              return matches[0];
-            }
-            return `<em>${matches[2]}</em>`;
+        html2 = html2.replace(/([*\\]*)(\*{1}[^\s]+.*?\*{1})([*]*)/g, (...matches) => {
+          if (matches[1] || matches[3]) {
+            return matches[0];
           }
-        );
-        html2 = html2.replace(
-          /([\*\\]*)(\*\*.+?\*\*)([\*\\]*)/g,
-          (...matches) => {
-            if (matches[1] || matches[3]) {
-              return matches[0];
-            }
-            return `<strong>${matches[2]}</strong>`;
+          return `<em>${matches[2]}</em>`;
+        }).replace(/([_\\]*)(_{1}[^\s]+.*?_{1})([_]*)/g, (...matches) => {
+          if (matches[1] || matches[3]) {
+            return matches[0];
           }
-        );
+          return `<em>${matches[2]}</em>`;
+        });
+        html2 = html2.replace(/([*\\]*)(\*\*[^\s]+.*?\*\*)([*\\]*)/g, (...matches) => {
+          if (matches[1] || matches[3]) {
+            return matches[0];
+          }
+          return `<strong>${matches[2]}</strong>`;
+        }).replace(/([_\\]*)(__[^\s]+.*?__)([_\\]*)/g, (...matches) => {
+          if (matches[1] || matches[3]) {
+            return matches[0];
+          }
+          return `<strong>${matches[2]}</strong>`;
+        });
         html2 = html2.replace(
-          /([\~\\])*(\~\~[^~].+?\~\~)([\~])*/g,
+          /([~\\])*(~~[^~][^\s]+.*?~~)([~])*/g,
           (...matches) => {
             if (matches[1] || matches[3]) {
               return matches[0];
@@ -237,7 +254,7 @@
       if (html !== el.innerHTML) {
         el.innerHTML = html;
       }
-      if (el.innerText.trim() === "" && EMPTY_LINE_HTML_PLACEHOLDER) {
+      if (el.textContent.trim() === "" && EMPTY_LINE_HTML_PLACEHOLDER) {
         el.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
       }
       el.querySelectorAll("a.link[href]").forEach((el2) => {
@@ -374,13 +391,10 @@
     #debug = false;
     #readonly = false;
     #tabSize = 0;
-    #scroll = {
-      behavior: null,
-      block: null
-    };
     #caretPosition = [];
     #editorCaretPosition = 0;
     #textLengthOnKeyDown = 0;
+    #placeholder = "";
     #keyboardShortcuts = {
       refresh: {
         accessKey: "KeyR",
@@ -398,10 +412,8 @@
         handler: (ev) => {
           if (this.target.parentElement.hasAttribute("focus")) {
             this.target.parentElement.removeAttribute("focus");
-            findButton(ev).classList.remove("active");
           } else {
             this.target.parentElement.setAttribute("focus", "paragraph");
-            findButton(ev).classList.add("active");
           }
         },
         accessKey: "KeyX"
@@ -410,18 +422,14 @@
         handler: (ev) => {
           if (this.target.parentElement.hasAttribute("image-preview")) {
             this.target.parentElement.removeAttribute("image-preview");
-            findButton(ev).classList.remove("active");
           } else {
             this.target.parentElement.setAttribute("image-preview", "*");
-            findButton(ev).classList.add("active");
           }
         },
         accessKey: "KeyI"
       }
     };
-    #scrollToCaretDebounced = null;
-    #renderMarkdownToHtmlDebounced = null;
-    HIDE_CARET_ON_CHANGE_FOR_MILLISECONDS = isTouchDevice() ? false : 100;
+    HIDE_CARET_ON_CHANGE_FOR_MILLISECONDS = false;
     POSSIBLE_BLOCK_CLASSES = [
       "h1",
       "h2",
@@ -445,18 +453,6 @@
         throw new Error("A target HTML element is required");
       }
       this.target = targetHTMLElement;
-      this.#scrollToCaretDebounced = debounce(() => {
-        this.#scrollToCaret();
-      }, 400);
-      this.#renderMarkdownToHtmlDebounced = debounce(() => {
-        const currentParagraph = currentBlockWithCaret();
-        if (currentParagraph) {
-          addParagraphClasses([currentParagraph]);
-        }
-        addCodeBlockClasses(this.allChildren());
-        this.#updateAllVisibleElements();
-        this.#restoreLastCaretPosition();
-      }, 500);
       BrowserFixes.noDivInsideContentEditable(this.target);
       this.#prepareTargetHTMLElement(initialText);
     }
@@ -478,6 +474,11 @@
     allChildren() {
       return this.target.querySelectorAll(":scope > *");
     }
+    #visibleChildren() {
+      return [...this.allChildren()].filter(
+        (el) => elementIsVisible(el)
+      );
+    }
     /**
      * (Re)renders markdown.
      * Can be helpfull if not all elements are updated correctly.
@@ -485,17 +486,18 @@
      */
     refresh() {
       let cursor = Cursor_default.getCurrentCursorPosition(this.target);
+      const lengthBefore = this.target.innerText.length;
       this.replaceText(this.getMarkdown());
+      const diffCursorPosition = lengthBefore - this.target.innerText.length;
       if (cursor === 0) {
         Cursor_default.setCurrentCursorPosition(
           cursor,
           this.target.querySelector(".block:first-child") || this.target
         );
       } else {
-        Cursor_default.setCurrentCursorPosition(cursor, this.target);
+        Cursor_default.setCurrentCursorPosition(cursor + diffCursorPosition, this.target);
       }
       this.#addCssClassToBlockWithCaret();
-      this.#scrollToCaret();
     }
     /**
      * Returns the markdown/commonmark text.
@@ -535,16 +537,11 @@
         (ev) => this.onScroll(ev, this)
       );
     }
+    #hasManyElements() {
+      return this.allChildren().length > 500;
+    }
     #updateChildrenElementsWithMarkdownClasses() {
       let children = this.allChildren();
-      if (children.length > 500) {
-        if (!this._warnedAboutTooManyChildren) {
-          this._warnedAboutTooManyChildren = true;
-          console.warn("Too many child elements. Just updating visible elements");
-        }
-        this.#updateAllVisibleElements();
-        return;
-      }
       this._warnedAboutTooManyChildren = false;
       addCodeBlockClasses(children);
       addParagraphClasses(children);
@@ -584,9 +581,7 @@
       return caretPosition;
     }
     #updateAllVisibleElements() {
-      const visibleElements = [...this.allChildren()].filter(
-        (el) => elementIsVisible(el)
-      );
+      const visibleElements = this.#visibleChildren();
       addCodeBlockClasses(visibleElements);
       addParagraphClasses(visibleElements);
     }
@@ -611,18 +606,10 @@
       if (current.innerText.trim() === "" && EMPTY_LINE_HTML_PLACEHOLDER && isFirefox()) {
         current.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
       }
-      if (current.getBoundingClientRect().height < this.target.parentElement.getBoundingClientRect().height && current.getBoundingClientRect().height < window.innerHeight) {
-        this.#scrollToCaret();
-      }
     }
-    #scrollToCaret() {
-      if (!this.#scroll.behavior || isTouchDevice()) {
-        return;
-      }
-      this.target.querySelector(".with-caret")?.scrollIntoView({
-        behavior: this.#scroll.behavior,
-        block: this.#scroll.block || "center"
-      });
+    set placeholder(placeholder) {
+      this.#placeholder = placeholder;
+      this.#checkPlaceholder();
     }
     set tabSize(value) {
       if (value === "\\t") {
@@ -635,19 +622,6 @@
       if (!value) {
         this.#tabSize = false;
       }
-    }
-    set scroll(value) {
-      if (!value) {
-        this.#scroll = {
-          behavior: null,
-          block: null
-        };
-        return;
-      }
-      this.#scroll = {
-        behavior: value.split("|")[0],
-        block: value.split("|")[1]
-      };
     }
     set readonly(value) {
       this.#readonly = !!value;
@@ -695,6 +669,19 @@
         });
       }
     }
+    #checkPlaceholder() {
+      if (!this.#placeholder) {
+        return;
+      }
+      if (!this.target.querySelector(".block")) {
+        return;
+      }
+      if (this.target.innerText.length === 0 || this.target.innerText === "\n") {
+        this.target.querySelector(".block").dataset.placeholder = this.#placeholder;
+      } else {
+        this.target.querySelectorAll(".block[data-placeholder]").forEach((el) => delete el.dataset.placeholder);
+      }
+    }
     #afterPaste(event, editor) {
       setTimeout(async () => {
         this.refresh();
@@ -706,7 +693,9 @@
     }
     #onClick(event, editor) {
       this.#addCssClassToBlockWithCaret();
-      this.#scrollToCaretDebounced();
+      if (event.isTrusted) {
+        this.#checkPlaceholder();
+      }
     }
     onScroll(event, editor) {
       this.#updateAllVisibleElements();
@@ -725,33 +714,11 @@
           }
         }
       }
-      if (this.HIDE_CARET_ON_CHANGE_FOR_MILLISECONDS && (event.key === "Enter" || event.key === "Backspace")) {
-        this.target.classList.add("hide-caret");
-        if (!this.hitEnterDebounce) {
-          this.hitEnterDebounce = debounce(() => {
-            this.target.classList.remove("hide-caret");
-          }, this.HIDE_CARET_ON_CHANGE_FOR_MILLISECONDS);
-        }
-        this.hitEnterDebounce();
-      }
+      this.#checkPlaceholder();
       if (event.key === "Tab") {
         if (this.#customTabBehaviour) {
           this.#customTabBehaviour(event);
           return;
-        }
-      }
-      if (event.key === "Backspace") {
-        let current = currentBlockWithCaret();
-        if (current?.innerText?.trim() === "") {
-          event.preventDefault();
-          if (!current.previousSibling.innerText?.trim()) {
-            current.previousSibling.innerHTML = "";
-          }
-          Cursor_default.setCurrentCursorPosition(
-            current.previousSibling.innerText?.length || 0,
-            current.previousSibling
-          );
-          current.remove();
         }
       }
     }
@@ -760,8 +727,29 @@
       if (event.isComposing) {
         return;
       }
+      this.#checkPlaceholder();
       if (!document.fullscreenElement) {
         this.target.parentElement.classList.remove("zen-mode");
+      }
+      const currentParagraph = currentBlockWithCaret();
+      if (event.key === "Enter") {
+        if (currentParagraph) {
+          this.POSSIBLE_BLOCK_CLASSES.forEach(
+            (tagName) => currentParagraph.classList.remove(tagName)
+          );
+          currentParagraph.classList.add("block");
+          if (currentParagraph.previousSibling.classList.contains("code-block")) {
+            if (!currentParagraph.previousSibling.classList.contains(
+              "code-block-end"
+            ) || currentParagraph.innerText.endsWith("```")) {
+              currentParagraph.classList.add("code-block");
+            }
+          }
+        }
+        if (this.#onAfterHittingEnter) {
+          this.#onAfterHittingEnter();
+        }
+        return;
       }
       const selectionRange = Math.abs(
         window.getSelection().extentOffset - window.getSelection().baseOffset
@@ -778,7 +766,6 @@
           return;
         }
       }
-      const currentParagraph = currentBlockWithCaret();
       if (isFirefox() && currentParagraph && currentParagraph.innerText.trim() === "" && event.key === " ") {
       }
       if (isFirefox() && this.target.innerText.trim() !== "" && this.target.querySelectorAll(".block").length === 1 && this.target.querySelector(".block").innerText.trim() === "") {
@@ -786,13 +773,6 @@
         Cursor_default.setCurrentCursorPosition(0, this.target.querySelector(".block"));
       }
       this.#addCssClassToBlockWithCaret();
-      if (isFirefox()) {
-        if (event.key === "Enter") {
-          this.#scrollToCaretDebounced();
-        }
-      } else {
-        this.#scrollToCaretDebounced();
-      }
       if (!currentParagraph) {
         if (isFirefox()) {
           let divs = this.target.querySelectorAll("div:not(.block)");
@@ -821,40 +801,25 @@
         console.warn("\u2026 no element with current caret\u2026");
         return;
       }
-      if (event.key === "Enter") {
-        this.POSSIBLE_BLOCK_CLASSES.forEach(
-          (tagName) => currentParagraph.classList.remove(tagName)
-        );
-        currentParagraph.classList.add("block");
-        if (currentParagraph.previousSibling.classList.contains("code-block")) {
-          if (!currentParagraph.previousSibling.classList.contains(
-            "code-block-end"
-          ) || currentParagraph.innerText.endsWith("```")) {
-            currentParagraph.classList.add("code-block");
-          }
-        }
-        if (this.#onAfterHittingEnter) {
-          this.#onAfterHittingEnter();
-        }
-        return;
-      }
       this.#storeLastCaretPosition(currentBlockWithCaret());
-      if (currentParagraph.classList.contains("code-block")) {
-        addCodeBlockClasses(this.allChildren());
-        this.#updateChildrenElementsWithMarkdownClasses();
-      }
       if (currentParagraph.innerText.trim() === "") {
         return;
       }
-      const hasManyParagraphs = this.allChildren().length > 500;
-      if (hasManyParagraphs) {
-        this.#renderMarkdownToHtmlDebounced();
-        return;
+      if (event.key !== "Enter") {
+        if (this.#hasManyElements()) {
+          this.__renderMarkdownToHtmlDebounced ||= debounce(() => {
+            this.#storeLastCaretPosition();
+            this.#updateAllVisibleElements();
+            this.#restoreLastCaretPosition();
+          }, 500);
+          this.__renderMarkdownToHtmlDebounced();
+          return;
+        }
+        addParagraphClasses([currentParagraph]);
+        addCodeBlockClasses(this.#visibleChildren());
+        this.#updateAllVisibleElements();
+        this.#restoreLastCaretPosition();
       }
-      addParagraphClasses([currentParagraph]);
-      addCodeBlockClasses(this.allChildren());
-      this.#updateAllVisibleElements();
-      this.#restoreLastCaretPosition();
     }
     static #activateElementWithClickFocusAndCaret(el) {
       el.click();
@@ -865,12 +830,6 @@
       let current = currentBlockWithCaret();
       if (!current) return;
       if (current.classList.contains("code-block")) return;
-      if (!isSafari()) {
-        this.#storeLastCaretPosition();
-        this.#updateAllVisibleElements();
-        addParagraphClasses([current]);
-        this.#restoreLastCaretPosition();
-      }
       if (this.target.parentElement.getAttribute("autocomplete") === "off") {
         return;
       }
@@ -882,7 +841,7 @@
       const previousAutocompletePattern = current.previousSibling?.dataset?.autocompletePattern || "";
       const insertedElementText = current.innerText;
       const previousText = current.previousSibling.innerText;
-      const lineBeginsWithUnorderedList = /^(\s*\-\s+|\s*\*\s+|\s*•\s+|\s*\*\s+|\s*\+\s+|\>+\s*)(.*)$/;
+      const lineBeginsWithUnorderedList = /^(\s*-\s+|\s*\*\s+|\s*•\s+|\s*\*\s+|\s*\+\s+|\>+\s*)(.*)$/;
       const lineBeginsWithOrderedList = /^(\s*)(\d+)(\.|\.\))\s.+/;
       let matches = previousText.match(lineBeginsWithUnorderedList);
       if (matches && matches[1]) {
@@ -978,8 +937,10 @@
       if (this.hasAttribute("autofocus")) {
         this.editor.focus = true;
       }
-      this.editor.scroll = this.getAttribute("scroll");
       this.editor.tabSize = this.getAttribute("tab-size");
+      if (this.hasAttribute("placeholder")) {
+        this.editor.placeholder = this.getAttribute("placeholder");
+      }
       this.addEventListener("input", () => this.#syncValueForTextareaElement());
       this.#syncValueForTextareaElement();
     }
@@ -1003,9 +964,6 @@
       return this.editor.getMarkdown();
     }
     attributeChangedCallback(name, oldValue, newValue) {
-      if (name === "scroll") {
-        this.editor.scroll = newValue;
-      }
       if (name === "tab-size") {
         this.editor.tabSize = newValue;
       }
