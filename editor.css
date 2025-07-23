@@ -1,5 +1,5 @@
-@import url("src/css/FocusEditor.css?v0.0.2a");
-@import url("src/css/themes/plex-mono/plex-mono.css");
+@import url("src/css/FocusEditor.css?{{LAST_GIT_COMMIT_HASH}}");
+@import url("src/css/themes/plex-mono/plex-mono.css?{{LAST_GIT_COMMIT_HASH}}");
 
 :root {
   --nav-height: 3rem;
