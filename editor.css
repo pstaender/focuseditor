@@ -1,4 +1,4 @@
-@import url("src/css/FocusEditor.css?v0.0.2");
+@import url("src/css/FocusEditor.css?v0.0.2a");
 @import url("src/css/themes/plex-mono/plex-mono.css");
 
 :root {
@@ -6,6 +6,7 @@
   --font-family:
     "IBM Plex Mono", ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas,
     Liberation Mono, monospace;
+  color-scheme: light dark;
 }
 
 body,
@@ -17,6 +18,7 @@ html {
 
 body {
   font-family: var(--font-family);
+  background: light-dark(#fff, #202020);
 }
 
 nav {
@@ -28,11 +30,11 @@ nav {
   display: grid;
   place-content: center;
   /* From https://css.glass */
-  background: rgba(255, 255, 255, 0.9);
+  background: light-dark(rgba(255, 255, 255, 0.9), rgba(32, 32, 32, 0.9));
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.3), rgba(32, 32, 32, 0.3));
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica,
     Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
@@ -61,10 +63,12 @@ nav {
     flex-wrap: wrap;
     overflow-y: auto;
     padding: 0.85rem 0;
+    scroll-snap-type: y proximity;
     li {
       list-style: none;
       display: flex;
       align-items: center;
+      scroll-snap-align: center;
     }
   }
 }
@@ -83,6 +87,7 @@ nav:has(+ #toggle-menu-button #toggle-menu:checked) {
     padding: 0;
     width: 100%;
     text-align: center;
+    background: none;
     &&:focus {
       outline: none;
     }
