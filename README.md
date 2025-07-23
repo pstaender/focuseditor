@@ -1,7 +1,7 @@
 # Focus Editor
 ## … for the focused editor
 
-[See the demo 🚀](https://unpkg.com/browser-focus-editor@latest/index.html)
+[See the demo 🚀](https://pstaender.github.io/focuseditor/)
 
 ### Features
 
