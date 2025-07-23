@@ -151,9 +151,6 @@ focus-editor {
     .h5 {
       margin-left: calc(var(--margin-left-factor) * -0.91 * var(--space-left));
     }
-    .h6 {
-      /* text-transform: uppercase; */
-    }
     .blockquote {
       background-color: var(--color-grey-very-light);
       margin-bottom: 0;

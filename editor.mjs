@@ -9,9 +9,18 @@ let localStorage =
     : window.sessionStorage;
 const focusEditor = document.querySelector("focus-editor");
 
-if (window.location.hash === "#new") {
+window.newFile = () => {
   localStorage.clear();
   focusEditor.value = "";
+  document.getElementById("filename").value = `focus-editor-${Date.now()}.txt`;
+  document.getElementById("remember").checked = true;
+  document.getElementById("remember").dispatchEvent(new Event("change"));
+  document.getElementById("filename").dispatchEvent(new Event("change"));
+};
+
+if (window.location.hash === "#new") {
+  window.localStorage.clear();
+  window.newFile();
 }
 
 function removeWordWrap(text, maxLength = null, autodetect = false) {
@@ -57,7 +66,9 @@ function rememberText() {
 }
 
 function displayText(txt) {
-  focusEditor.value = removeWordWrap(txt);
+  focusEditor.value = document.getElementById("word-wrap").checked
+    ? removeWordWrap(txt)
+    : txt;
   rememberText();
 }
 
@@ -66,6 +77,7 @@ focusEditor.addEventListener("drop", (event) => {
   event.preventDefault();
   const file = event.dataTransfer.files[0];
   const reader = new FileReader();
+  document.getElementById('filename').value = file.name || 'import.txt';
   reader.onload = (e) => {
     displayText(e.target.result);
   };
@@ -95,13 +107,13 @@ window.save = function () {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "focus-editor.txt";
+  a.download = document.getElementById("filename").value || "focus-editor.txt";
   a.click();
   URL.revokeObjectURL(url);
 };
 
 document
-  .querySelectorAll('main nav input[type="checkbox"][id]')
+  .querySelectorAll('main input[type="checkbox"][id]')
   .forEach((input) => {
     input.checked =
       localStorage.getItem(`${localStorageKey}-${input.id}`) === "true";
@@ -123,6 +135,14 @@ document
       localStorage.setItem(`${localStorageKey}-${input.id}`, input.checked);
     });
   });
+
+document.querySelectorAll('main input[type="text"][id]').forEach((input) => {
+  input.value =
+    localStorage.getItem(`${localStorageKey}-${input.id}`) || input.value;
+  input.addEventListener("change", () => {
+    localStorage.setItem(`${localStorageKey}-${input.id}`, input.value);
+  });
+});
 
 if (
   document.getElementById("remember").checked &&

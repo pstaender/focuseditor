@@ -9,22 +9,36 @@
   </head>
   <body>
     <main>
+      <div id="filename-holder">
+        <input type="text" id="filename" name="filename" value="focus-editor.txt"></div>
       <focus-editor class="indent-headings" autofocus spellcheck="false" hyphens="auto" tab-size="2" placeholder="Type a text or drop a txt file here…"></focus-editor>
       <nav>
         <ul>
+          <li>
+            <button id="save" type="button" onclick="newFile()">New</button>
+          </li>
           <li>
             <button id="save" type="button" onclick="save()">Save</button>
           </li>
           <li>
             <label for="remember">Remember</label>
-            <input type="checkbox" id="remember" checked>
+            <input type="checkbox" id="remember">
           </li>
           <li>
             <label for="hyphens">Hypens</label>
             <input type="checkbox" id="hyphens" checked>
           </li>
+          <li>
+            <label for="word-wrap">Detect Text Wrap</label>
+            <input type="checkbox" id="word-wrap" checked>
+          </li>
         </ul>
       </nav>
+      <div id="toggle-menu-button">
+        <input type="checkbox" id="toggle-menu" name="toggle-menu">
+
+        <label for="toggle-menu">Show/Hide Menu</label>
+      </div>
     </main>
   </body>
 </html>
