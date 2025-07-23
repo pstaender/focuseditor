@@ -29,6 +29,24 @@ window.newFile = () => {
   document.getElementById("filename").dispatchEvent(new Event("change"));
 };
 
+window.importFile = () => {
+  const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'text/plain,.md,.markdown';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          displayText(event.target.result);
+          window.setFilename(file.name);
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+}
+
 window.setFilename = (filename) => {
   document.getElementById("filename").value = filename;
   document.getElementById("filename").dispatchEvent(new Event("change"));

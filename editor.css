@@ -58,6 +58,9 @@ nav {
     gap: 1rem;
     justify-content: center;
     align-items: center;
+    flex-wrap: wrap;
+    overflow-y: auto;
+    padding: 0.85rem 0;
     li {
       list-style: none;
       display: flex;
