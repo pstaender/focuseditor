@@ -183,6 +183,7 @@ document
       }
       localStorage.setItem(`${localStorageKey}-${input.id}`, input.checked);
     });
+    input.dispatchEvent(new Event("change"));
   });
 
 document.querySelectorAll('main input[type="text"][id]').forEach((input) => {

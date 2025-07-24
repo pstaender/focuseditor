@@ -62,7 +62,7 @@ nav {
     align-items: center;
     flex-wrap: wrap;
     overflow-y: auto;
-    padding: 0.85rem 0;
+    padding: 0.8rem 0;
     scroll-snap-type: y proximity;
     li {
       list-style: none;

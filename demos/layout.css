@@ -2,6 +2,7 @@ html,
 body {
   min-height: 100vh;
 }
+
 body {
   padding: 0;
   margin: 0;
@@ -14,6 +15,12 @@ body {
   }
 }
 
+a {
+  color: #00a0ff;
+  &:visited {
+    color:  #00a0ff;
+  }
+}
 
 @media (prefers-color-scheme: dark) {
   body .editor {

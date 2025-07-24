@@ -595,7 +595,7 @@
     }
     #updateAllVisibleElements() {
       const visibleElements = this.#visibleChildren();
-      addCodeBlockClasses(visibleElements, document);
+      addCodeBlockClasses(this.allChildren(), document);
       addParagraphClasses(visibleElements, document);
     }
     #addCssClassToBlockWithCaret() {
@@ -824,12 +824,12 @@
             this.#storeLastCaretPosition();
             this.#updateAllVisibleElements();
             this.#restoreLastCaretPosition();
-          }, 500);
+          }, 350);
           this.__renderMarkdownToHtmlDebounced();
           return;
         }
         addParagraphClasses([currentParagraph], document);
-        addCodeBlockClasses(this.#visibleChildren(), document);
+        addCodeBlockClasses(this.allChildren(), document);
         this.#updateAllVisibleElements();
         this.#restoreLastCaretPosition();
       }
