@@ -553,7 +553,7 @@ class FocusEditorCore {
           this.#storeLastCaretPosition();
           this.#updateAllVisibleElements();
           this.#restoreLastCaretPosition();
-        }, 500);
+        }, 350);
         this.__renderMarkdownToHtmlDebounced();
         return;
       }
