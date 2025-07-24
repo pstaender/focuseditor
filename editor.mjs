@@ -23,10 +23,9 @@ if (window.location.hash === "#__force_new__") {
 window.newFile = () => {
   localStorage.clear();
   focusEditor.value = "";
-  document.getElementById("filename").value = `focus-editor-${Date.now()}.txt`;
+  window.setFilename(`focus-editor-${Date.now()}.txt`);
   document.getElementById("remember").checked = true;
   document.getElementById("remember").dispatchEvent(new Event("change"));
-  document.getElementById("filename").dispatchEvent(new Event("change"));
 };
 
 window.importFile = () => {
@@ -50,6 +49,7 @@ window.importFile = () => {
 window.setFilename = (filename) => {
   document.getElementById("filename").value = filename;
   document.getElementById("filename").dispatchEvent(new Event("change"));
+  document.title = filename;
 };
 
 function removeWordWrap(text, maxLength = null, autodetect = false) {
@@ -199,3 +199,5 @@ if (
 ) {
   focusEditor.value = localStorage.getItem(`${localStorageKey}-text`);
 }
+
+document.title = document.getElementById("filename").value;
