@@ -93,6 +93,7 @@ export function addCodeBlockClasses(elements, document) {
     }
     return el;
   });
+  // TODO: check
   // check for unclosed code block
   if (isCodeBlock && codeBlocks.length > 0) {
     codeBlocks.forEach((el) => {

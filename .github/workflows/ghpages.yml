@@ -37,7 +37,7 @@ jobs:
           node-version: 22.x
       - run: npm install
       - run: npm run build
-      - run: sed -i "s/{{LAST_GIT_COMMIT_HASH}}/$(git rev-parse HEAD)/g" **/*.html **/*.css
+      - run: sed -i "s/{{LAST_GIT_COMMIT_HASH}}/$(git rev-parse HEAD)/g" **/*.html **/*.css *.html *.css
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

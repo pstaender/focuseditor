@@ -182,17 +182,6 @@ class FocusEditorCore {
 
   #updateChildrenElementsWithMarkdownClasses() {
     let children = this.allChildren();
-    /* THIS DID NOT WORK AS EXPECTED */
-    /*
-    if (children.length > 500) {
-      if (!this._warnedAboutTooManyChildren) {
-        this._warnedAboutTooManyChildren = true;
-        console.warn("Too many child elements. Just updating visible elements");
-      }
-      this.#updateAllVisibleElements();
-      return;
-    }
-     */
     this._warnedAboutTooManyChildren = false;
     md2html.addCodeBlockClasses(children, document);
     md2html.addParagraphClasses(children, document);
@@ -246,7 +235,7 @@ class FocusEditorCore {
 
   #updateAllVisibleElements() {
     const visibleElements = this.#visibleChildren();
-    md2html.addCodeBlockClasses(visibleElements, document);
+    md2html.addCodeBlockClasses(this.allChildren(), document);
     md2html.addParagraphClasses(visibleElements, document);
   }
 
@@ -568,8 +557,9 @@ class FocusEditorCore {
         this.__renderMarkdownToHtmlDebounced();
         return;
       }
+
       md2html.addParagraphClasses([currentParagraph], document);
-      md2html.addCodeBlockClasses(this.#visibleChildren(), document);
+      md2html.addCodeBlockClasses(this.allChildren(), document);
 
       this.#updateAllVisibleElements();
       this.#restoreLastCaretPosition();
