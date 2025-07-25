@@ -7,6 +7,7 @@
 
 - distraction free **zen-mode**
 - zero dependencies
+- responsive
 - lightweight
   - ~50Kbytes *un*compressed <-> ~20Kbytes compressed
 

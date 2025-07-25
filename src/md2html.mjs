@@ -12,29 +12,17 @@ export const EMPTY_LINE_HTML_PLACEHOLDER = `<br>`;
 
 export function innerTextToHtml(text, document) {
   text = text.replace(/\r/g, "\n");
-  const firstLine = text.split("\n").filter((t) => t.length > 0)[0];
-  const initialSpace = firstLine
-    ? firstLine.match(/^\s+/)
-      ? firstLine.match(/^\s+/)[0]?.length
-      : 0
-    : 0;
+
   const lines = text.split("\n").map((l) => {
-    // strip leading whitespace
-    if (initialSpace > 0) {
-      l = l.replace(new RegExp(`^\\s{${initialSpace}}`), "");
-    }
     // strip trailing whitespace
     l = l.replace(/\s+$/, "");
 
     if (l.trim() === "") {
       return `<div class="block">&nbsp;</div>`;
     }
-
-
     const el = document.createElement("div");
-
     el.textContent = l;
-    return el.outerHTML.replace(/\s{2}/g, "&nbsp;&nbsp;");
+    return el.outerHTML.replace(/ {2}/g, "&nbsp;&nbsp;");
   });
 
   let div = document.createElement("div");

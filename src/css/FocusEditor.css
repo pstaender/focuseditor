@@ -218,6 +218,7 @@ focus-editor {
       color: currentColor;
       text-decoration: none;
       transition: text-decoration var(--transition-duration);
+      display: inline-block;
       span {
         color: var(--color-grey-lighter);
       }

@@ -16,8 +16,22 @@ class FocusEditorWebComponent extends HTMLElement {
   constructor() {
     super();
 
+    function removeLeadingWhitespaces(text) {
+      text = text.replace(/\r/g, "\n");
+      const firstLine = text.split("\n").filter((t) => t.length > 0)[0];
+      const initialSpace = firstLine
+          ? firstLine.match(/^\s+/)
+            ? firstLine.match(/^\s+/)[0]?.length
+            : 0
+          : 0;
+      if (initialSpace === 0) {
+        return text;
+      }
+      return text.split("\n").map((l) => l.replace(new RegExp(`^\\s{${initialSpace}}`), "")).join("\n");
+    }
+
     const div = document.createElement("div");
-    let text = this.getAttribute("value") || this.textContent.replace(/\n\s+$/, "");
+    let text = this.getAttribute("value") || removeLeadingWhitespaces(this.textContent.replace(/\n\s+$/, ""));
 
     if (this.childElementCount && this.firstElementChild.tagName === "TEXTAREA") {
       this.classList.add('textarea');

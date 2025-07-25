@@ -312,14 +312,23 @@ class FocusEditorCore {
     const current = helper.currentBlockWithCaret();
     this.#storeLastCaretPosition();
 
+    const caretPosition = Cursor.getCurrentCursorPosition(helper.currentBlockWithCaret());
+
     if (this.#tabSize === "\t") {
       if (event.shiftKey) {
-        current.innerHTML = current.innerHTML.replace(/^(\t){1}/, "");
-        this.#restoreLastCaretPosition(helper.currentBlockWithCaret(), {
-          offset: -1,
-        });
+        if (current.textContent.substring(0, caretPosition).trim() === '') {
+          current.innerHTML = current.innerHTML.replace(/^(\t){1}/, "");
+          this.#restoreLastCaretPosition(helper.currentBlockWithCaret(), {
+            offset: -1,
+          });
+        }
+        return;
       } else {
-        current.innerHTML = "\t" + current.innerHTML;
+        if (caretPosition === 0) {
+          current.innerHTML = "\t" + current.innerHTML;
+        } else {
+          current.textContent = current.textContent.substring(0, caretPosition) + "\t" + current.textContent.substring(caretPosition);
+        }
         this.#restoreLastCaretPosition(helper.currentBlockWithCaret(), {
           offset: 1,
         });
