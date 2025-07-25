@@ -220,6 +220,7 @@ focus-editor {
       transition: -webkit-text-decoration var(--transition-duration);
       transition: text-decoration var(--transition-duration);
       transition: text-decoration var(--transition-duration), -webkit-text-decoration var(--transition-duration);
+      display: inline-block;
       span {
         color: var(--color-grey-lighter);
       }

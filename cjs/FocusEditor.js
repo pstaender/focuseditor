@@ -103,19 +103,14 @@
   var EMPTY_LINE_HTML_PLACEHOLDER = `<br>`;
   function innerTextToHtml(text, document2) {
     text = text.replace(/\r/g, "\n");
-    const firstLine = text.split("\n").filter((t) => t.length > 0)[0];
-    const initialSpace = firstLine ? firstLine.match(/^\s+/) ? firstLine.match(/^\s+/)[0]?.length : 0 : 0;
     const lines = text.split("\n").map((l) => {
-      if (initialSpace > 0) {
-        l = l.replace(new RegExp(`^\\s{${initialSpace}}`), "");
-      }
       l = l.replace(/\s+$/, "");
       if (l.trim() === "") {
         return `<div class="block">&nbsp;</div>`;
       }
       const el = document2.createElement("div");
       el.textContent = l;
-      return el.outerHTML.replace(/\s{2}/g, "&nbsp;&nbsp;");
+      return el.outerHTML.replace(/ {2}/g, "&nbsp;&nbsp;");
     });
     let div = document2.createElement("div");
     div.innerHTML = lines.join("\n");
@@ -653,14 +648,22 @@
       event.preventDefault();
       const current = currentBlockWithCaret();
       this.#storeLastCaretPosition();
+      const caretPosition = Cursor_default.getCurrentCursorPosition(currentBlockWithCaret());
       if (this.#tabSize === "	") {
         if (event.shiftKey) {
-          current.innerHTML = current.innerHTML.replace(/^(\t){1}/, "");
-          this.#restoreLastCaretPosition(currentBlockWithCaret(), {
-            offset: -1
-          });
+          if (current.textContent.substring(0, caretPosition).trim() === "") {
+            current.innerHTML = current.innerHTML.replace(/^(\t){1}/, "");
+            this.#restoreLastCaretPosition(currentBlockWithCaret(), {
+              offset: -1
+            });
+          }
+          return;
         } else {
-          current.innerHTML = "	" + current.innerHTML;
+          if (caretPosition === 0) {
+            current.innerHTML = "	" + current.innerHTML;
+          } else {
+            current.textContent = current.textContent.substring(0, caretPosition) + "	" + current.textContent.substring(caretPosition);
+          }
           this.#restoreLastCaretPosition(currentBlockWithCaret(), {
             offset: 1
           });
@@ -933,8 +936,17 @@
     editor = null;
     constructor() {
       super();
+      function removeLeadingWhitespaces(text2) {
+        text2 = text2.replace(/\r/g, "\n");
+        const firstLine = text2.split("\n").filter((t) => t.length > 0)[0];
+        const initialSpace = firstLine ? firstLine.match(/^\s+/) ? firstLine.match(/^\s+/)[0]?.length : 0 : 0;
+        if (initialSpace === 0) {
+          return text2;
+        }
+        return text2.split("\n").map((l) => l.replace(new RegExp(`^\\s{${initialSpace}}`), "")).join("\n");
+      }
       const div = document.createElement("div");
-      let text = this.getAttribute("value") || this.textContent.replace(/\n\s+$/, "");
+      let text = this.getAttribute("value") || removeLeadingWhitespaces(this.textContent.replace(/\n\s+$/, ""));
       if (this.childElementCount && this.firstElementChild.tagName === "TEXTAREA") {
         this.classList.add("textarea");
         if (!this.getAttribute("name") && this.firstElementChild.getAttribute("name")) {
