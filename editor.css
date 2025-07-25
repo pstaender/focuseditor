@@ -144,8 +144,50 @@ focus-editor {
   max-width: 60rem;
   margin: 0 auto;
   .block:last-child {
-    margin-bottom: calc(50vw - 4rem);
+    margin-bottom: calc(50vh - var(--nav-height));
   }
 }
 .focus-editor {
+}
+
+/**
+ * Reverse the menu to the the top for touch devices,because the menu is at the bottom
+ */
+@media (pointer: coarse) {
+  main {
+    position: relative;
+    min-height: 100%;
+  }
+  #filename-holder {
+    position: absolute;
+    bottom: 0;
+    width: calc(100% - 2rem);
+  }
+  #toggle-menu-button,
+  nav {
+    top: 0;
+  }
+  focus-editor:has(+ nav + #toggle-menu-button #toggle-menu:not(:checked)) {
+    .block:first-child {
+      margin-top: var(--nav-height);
+    }
+  }
+}
+
+@media (pointer: coarse) {
+  html {
+    font-size: 22px;
+  }
+}
+
+@media (pointer: coarse) {
+  html {
+    font-size: 22px;
+  }
+}
+
+@media (pointer: coarse) and (max-width: 768px) {
+  html {
+    font-size: 18px;
+  }
 }
