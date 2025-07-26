@@ -2,6 +2,7 @@ import * as md2html from "./md2html.mjs";
 import * as helper from "./helper.mjs";
 import BrowserFixes from "./BrowserFixes.mjs";
 import Cursor from "./Cursor.mjs";
+import UndoText from "./UndoText.mjs";
 
 /** Focus Editor Core class creates the editable content element and manages all its' changes on the text */
 class FocusEditorCore {
@@ -12,6 +13,9 @@ class FocusEditorCore {
   #editorCaretPosition = 0;
   #textLengthOnKeyDown = 0;
   #placeholder = "";
+  #maxUndoSteps = 200;
+  #textUndo = new UndoText();
+
   #keyboardShortcuts = {
     refresh: {
       accessKey: "KeyR",
@@ -74,6 +78,8 @@ class FocusEditorCore {
     }
     this.target = targetHTMLElement;
 
+    this.__addUndoStepDebounced = helper.debounce(this.#addUndoStep, 500);
+
     BrowserFixes.noDivInsideContentEditable(this.target);
 
     this.#prepareTargetHTMLElement(initialText);
@@ -131,8 +137,8 @@ class FocusEditorCore {
   }
 
   /**
-   * Returns the markdown/commonmark text.
-   * @returns {string} Markdown text
+   * Returns the plain text.
+   * @returns {string} plain text
    */
   getMarkdown() {
     let text = [];
@@ -146,7 +152,7 @@ class FocusEditorCore {
     this.target
       .querySelectorAll(".block")
       .forEach((el) =>
-        text.push(String(el.innerText).replace(/\n+$/, "") /* .trimEnd()*/),
+        text.push(String(el.innerText).replace(/\n+$/, "")),
       );
 
     text = text.join("\n");
@@ -392,6 +398,11 @@ class FocusEditorCore {
   #onKeyDown(event, editor) {
     editor.#debugLog("onKeyDown", event.key);
 
+    if ((event.metaKey || event.ctrlKey) && event.key === "z") {
+      this.#undoStep(event);
+      return;
+    }
+
     this.#storeEditorCaretPosition();
 
     this.#textLengthOnKeyDown = this.target.innerText.length;
@@ -432,6 +443,8 @@ class FocusEditorCore {
     }
 
     const currentParagraph = helper.currentBlockWithCaret();
+
+    this.__addUndoStepDebounced(currentParagraph);
 
     if (event.key === "Enter") {
       // Browser blindly copies all classes to new created element: we are removing them here
@@ -646,6 +659,30 @@ class FocusEditorCore {
         // TODO: cleanup dataset.autocompletePattern afterwards
       }
     }
+  }
+
+  #undoStep(event) {
+    event.preventDefault();
+    let undo = this.#textUndo.undo();
+    if (undo) {
+      this.replaceText(undo.text);
+      // restore caret
+      const { currentParagraphCaret, currentParagraphIndex } = undo.additionalData;
+      if (currentParagraphCaret !== undefined && currentParagraphIndex !== undefined) {
+        const currentParagraph = this.target.children[currentParagraphIndex];
+        if (currentParagraph) {
+          Cursor.setCurrentCursorPosition(currentParagraphCaret, currentParagraph);
+        }
+      }
+    }
+  }
+
+  #addUndoStep(currentParagraph) {
+    //#maxUndoSteps
+    this.#textUndo.add(this.getMarkdown(), currentParagraph?.parentNode ? {
+      currentParagraphCaret: Cursor.getCurrentCursorPosition(currentParagraph),
+      currentParagraphIndex: Array.from(currentParagraph.parentNode.children).indexOf(currentParagraph)
+    } : {});
   }
 
   /**
