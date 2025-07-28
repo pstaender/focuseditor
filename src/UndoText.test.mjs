@@ -28,7 +28,7 @@ it("undos and adds steps", ({ expect }) => {
   expect(undo.undo().text).toBe("3rd");
   undo.add("7th");
   undo.add("8th");
-  // expect(undo.undo().text).toBe("7th");
+  expect(undo.undo().text).toBe("7th");
 });
 
 it("perfoms undos and redos", ({ expect }) => {

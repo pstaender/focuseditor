@@ -75,7 +75,7 @@ class FocusEditorWebComponent extends HTMLElement {
   };
 
   set value(text) {
-    this.editor.replaceText(text);
+    this.editor.replaceText(text, { clearHistory: true });
   }
 
   get value() {

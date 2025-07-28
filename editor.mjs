@@ -49,7 +49,6 @@ window.importFile = () => {
 window.setFilename = (filename) => {
   document.getElementById("filename").value = filename;
   document.getElementById("filename").dispatchEvent(new Event("change"));
-  document.title = filename;
 };
 
 function removeWordWrap(text, maxLength = null, autodetect = false) {
@@ -139,6 +138,7 @@ window.addEventListener("keydown", (ev) => {
   }
 
   if ((ev.ctrlKey || ev.metaKey) && ev.key === "s") {
+    ev.preventDefault();
     window.save();
   }
 });
@@ -201,4 +201,14 @@ if (
   focusEditor.value = localStorage.getItem(`${localStorageKey}-text`);
 }
 
-document.title = document.getElementById("filename").value;
+document.getElementById("filename").addEventListener('change', () => {
+  if (!/\.\w+$/.test(document.getElementById("filename").value)) {
+    document.getElementById("filename").value += ".txt";
+    if (document.getElementById("filename").value === '.txt') {
+      document.getElementById("filename").value = 'focus-editor.txt';
+    }
+  }
+  document.title = document.getElementById("filename").value;
+})
+
+document.getElementById("filename").dispatchEvent(new Event("change"));

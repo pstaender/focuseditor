@@ -46,9 +46,6 @@ export default class UndoText {
       return null;
     }
 
-    // console.log(this.#undos[this.#position])
-
-
     this.#position--;
 
     const text = difflib.restore(this.#undos[this.#position + 1].diff, 1).join(this.SEPARATOR);
@@ -76,6 +73,13 @@ export default class UndoText {
 
   previous() {
     return this.#undos[this.#position];
+  }
+
+  clear() {
+    this.#undos = [];
+    this.#position = -1;
+    this.#previousText = null;
+    this.#currentText = null;
   }
 
   get undos() {

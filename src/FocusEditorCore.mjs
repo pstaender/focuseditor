@@ -89,13 +89,18 @@ class FocusEditorCore {
    * Replaces the current text with new text
    * @param {string} text
    */
-  replaceText(text) {
+  replaceText(text, { clearHistory = false } = {}) {
     this.target.innerHTML = md2html.innerTextToHtml(text, document);
     this.#updateChildrenElementsWithMarkdownClasses();
     this.#addCssClassToBlockWithCaret();
     this.target.parentElement.scroll({ top: 0 });
     this.target.focus();
     this.target.click();
+    if (clearHistory) {
+      this.#textUndo.clear();
+    } else {
+      this.#textUndo.add(this.getMarkdown());
+    }
   }
 
   /**
@@ -106,9 +111,7 @@ class FocusEditorCore {
   }
 
   #visibleChildren() {
-    return [...this.allChildren()].filter((el) =>
-      helper.elementIsVisible(el),
-    );
+    return [...this.allChildren()].filter((el) => helper.elementIsVisible(el));
   }
 
   /**
@@ -122,7 +125,7 @@ class FocusEditorCore {
 
     this.replaceText(this.getMarkdown());
 
-    const diffCursorPosition = lengthBefore - this.target.innerText.length
+    const diffCursorPosition = lengthBefore - this.target.innerText.length;
 
     if (cursor === 0) {
       // Firefox issue
@@ -151,9 +154,7 @@ class FocusEditorCore {
     }
     this.target
       .querySelectorAll(".block")
-      .forEach((el) =>
-        text.push(String(el.innerText).replace(/\n+$/, "")),
-      );
+      .forEach((el) => text.push(String(el.innerText).replace(/\n+$/, "")));
 
     text = text.join("\n");
 
@@ -167,7 +168,7 @@ class FocusEditorCore {
   #prepareTargetHTMLElement(text) {
     this.target.innerHTML = md2html.innerTextToHtml(
       helper.removeFirstLineBreak(text),
-      document
+      document,
     );
     this.#updateChildrenElementsWithMarkdownClasses();
 
@@ -178,12 +179,12 @@ class FocusEditorCore {
     this.target.addEventListener("click", (ev) => this.#onClick(ev, this));
     this.target.addEventListener("paste", (ev) => this.#afterPaste(ev, this));
     this.target.parentElement.addEventListener("scroll", (ev) =>
-      this.onScroll(ev, this),
+      this.#onScroll(ev, this),
     );
   }
 
   #hasManyElements() {
-    return this.allChildren().length > 500;
+    return this.allChildren().length > 700;
   }
 
   #updateChildrenElementsWithMarkdownClasses() {
@@ -318,11 +319,13 @@ class FocusEditorCore {
     const current = helper.currentBlockWithCaret();
     this.#storeLastCaretPosition();
 
-    const caretPosition = Cursor.getCurrentCursorPosition(helper.currentBlockWithCaret());
+    const caretPosition = Cursor.getCurrentCursorPosition(
+      helper.currentBlockWithCaret(),
+    );
 
     if (this.#tabSize === "\t") {
       if (event.shiftKey) {
-        if (current.textContent.substring(0, caretPosition).trim() === '') {
+        if (current.textContent.substring(0, caretPosition).trim() === "") {
           current.innerHTML = current.innerHTML.replace(/^(\t){1}/, "");
           this.#restoreLastCaretPosition(helper.currentBlockWithCaret(), {
             offset: -1,
@@ -333,7 +336,10 @@ class FocusEditorCore {
         if (caretPosition === 0) {
           current.innerHTML = "\t" + current.innerHTML;
         } else {
-          current.textContent = current.textContent.substring(0, caretPosition) + "\t" + current.textContent.substring(caretPosition);
+          current.textContent =
+            current.textContent.substring(0, caretPosition) +
+            "\t" +
+            current.textContent.substring(caretPosition);
         }
         this.#restoreLastCaretPosition(helper.currentBlockWithCaret(), {
           offset: 1,
@@ -363,13 +369,16 @@ class FocusEditorCore {
     if (!this.#placeholder) {
       return;
     }
-    if (!this.target.querySelector('.block')) {
+    if (!this.target.querySelector(".block")) {
       return;
     }
-    if (this.target.innerText.length === 0 || this.target.innerText === '\n') {
-      this.target.querySelector('.block').dataset.placeholder = this.#placeholder;
+    if (this.target.innerText.length === 0 || this.target.innerText === "\n") {
+      this.target.querySelector(".block").dataset.placeholder =
+        this.#placeholder;
     } else {
-      this.target.querySelectorAll('.block[data-placeholder]').forEach(el => delete el.dataset.placeholder);
+      this.target
+        .querySelectorAll(".block[data-placeholder]")
+        .forEach((el) => delete el.dataset.placeholder);
     }
   }
 
@@ -391,15 +400,23 @@ class FocusEditorCore {
     }
   }
 
-  onScroll(event, editor) {
+  #onScroll(event, editor) {
     this.#updateAllVisibleElements();
+  }
+
+  #isUndoEnabled() {
+    return !this.#hasManyElements() && this.#maxUndoSteps && this.#maxUndoSteps > 0;
   }
 
   #onKeyDown(event, editor) {
     editor.#debugLog("onKeyDown", event.key);
 
-    if ((event.metaKey || event.ctrlKey) && event.key === "z") {
-      this.#undoStep(event);
+    if (this.#isUndoEnabled() && (event.metaKey || event.ctrlKey) && event.key === "z") {
+      if (event.shiftKey) {
+        this.#redoStep(event);
+      } else {
+        this.#undoStep(event);
+      }
       return;
     }
 
@@ -444,7 +461,9 @@ class FocusEditorCore {
 
     const currentParagraph = helper.currentBlockWithCaret();
 
-    this.__addUndoStepDebounced(currentParagraph);
+    if (this.#maxUndoSteps && this.#maxUndoSteps > 0) {
+      this.__addUndoStepDebounced(currentParagraph);
+    }
 
     if (event.key === "Enter") {
       // Browser blindly copies all classes to new created element: we are removing them here
@@ -465,7 +484,6 @@ class FocusEditorCore {
           }
         }
       }
-
 
       if (this.#onAfterHittingEnter) {
         this.#onAfterHittingEnter();
@@ -615,7 +633,7 @@ class FocusEditorCore {
     const previousText = current.previousSibling.innerText;
     const lineBeginsWithUnorderedList =
       /^(\s*-\s+|\s*\*\s+|\s*•\s+|\s*\*\s+|\s*\+\s+|\>+\s*)(.*)$/;
-    const lineBeginsWithOrderedList = /^(\s*)(\d+)(\.|\.\))\s.+/;
+    const lineBeginsWithOrderedList = /^(\s*)(\d+)(\.|\.\)|\))\s.+/;
 
     let matches = previousText.match(lineBeginsWithUnorderedList);
 
@@ -661,28 +679,82 @@ class FocusEditorCore {
     }
   }
 
+  #dispatchInputEvent() {
+    this.target.parentElement.dispatchEvent(new InputEvent("input"));
+  }
+
   #undoStep(event) {
     event.preventDefault();
     let undo = this.#textUndo.undo();
-    if (undo) {
-      this.replaceText(undo.text);
-      // restore caret
-      const { currentParagraphCaret, currentParagraphIndex } = undo.additionalData;
-      if (currentParagraphCaret !== undefined && currentParagraphIndex !== undefined) {
-        const currentParagraph = this.target.children[currentParagraphIndex];
+    if (!undo) {
+      return;
+    }
+
+
+    this.replaceText(undo.text);
+    this.#dispatchInputEvent();
+    // restore caret
+    const { currentParagraphCaret, currentParagraphIndex } =
+      undo.additionalData;
+    if (
+      currentParagraphCaret !== undefined &&
+      currentParagraphIndex !== undefined
+    ) {
+      setTimeout(() => {
+        let currentParagraph = this.target.children[currentParagraphIndex];
+
         if (currentParagraph) {
-          Cursor.setCurrentCursorPosition(currentParagraphCaret, currentParagraph);
+          Cursor.setCurrentCursorPosition(
+            currentParagraphCaret,
+            currentParagraph,
+
+          );
+        } else {
+          currentParagraph = this.target.children[this.target.children.length];
+
         }
-      }
+        Cursor.setCurrentCursorPosition(
+          currentParagraphCaret,
+          currentParagraph,
+
+        );
+      }, 1)
+
     }
   }
 
   #addUndoStep(currentParagraph) {
     //#maxUndoSteps
-    this.#textUndo.add(this.getMarkdown(), currentParagraph?.parentNode ? {
-      currentParagraphCaret: Cursor.getCurrentCursorPosition(currentParagraph),
-      currentParagraphIndex: Array.from(currentParagraph.parentNode.children).indexOf(currentParagraph)
-    } : {});
+    this.#textUndo.add(
+      this.getMarkdown(),
+      currentParagraph?.parentNode
+        ? {
+            currentParagraphCaret:
+              Cursor.getCurrentCursorPosition(currentParagraph),
+            currentParagraphIndex: Array.from(
+              currentParagraph.parentNode.children,
+            ).indexOf(currentParagraph),
+          }
+        : {},
+    );
+  }
+
+  #redoStep(event) {
+    event.preventDefault();
+    let redo = this.#textUndo.redo();
+    if (!redo) {
+      return;
+    }
+    this.replaceText(redo.text);
+    this.#dispatchInputEvent();
+    // restore caret
+    const { currentParagraphCaret, currentParagraphIndex } = redo.additionalData;
+    if (currentParagraphCaret !== undefined && currentParagraphIndex !== undefined) {
+      const currentParagraph = this.target.children[currentParagraphIndex];
+      if (currentParagraph) {
+        Cursor.setCurrentCursorPosition(currentParagraphCaret, currentParagraph);
+      }
+    }
   }
 
   /**
