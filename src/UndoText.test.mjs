@@ -13,3 +13,48 @@ it("undos several steps", ({ expect }) => {
   expect(undo.undo().text).toBe("Hallo!");
   expect(undo.undo()).toBe(null);
 });
+
+it("undos and adds steps", ({ expect }) => {
+  let undo = new UndoText()
+    .add("1st")
+    .add("2nd")
+    .add("3rd")
+    .add("4th")
+    .add("5th");
+  expect(undo.undo().text).toBe("4th");
+  expect(undo.undo().text).toBe("3rd");
+  expect(undo.undos.length).toBe(5);
+  undo.add("6th");
+  expect(undo.undo().text).toBe("3rd");
+  undo.add("7th");
+  undo.add("8th");
+  expect(undo.undo().text).toBe("7th");
+});
+
+// it("perfoms undos and redos", ({ expect }) => {
+//   let undo = new UndoText()
+//     .add(`Hallo!`)
+//     .add(`Hallo!\nHallo Welt`)
+//     .add("Hallo!\nHallo Welt?")
+//     .add("Hallo!\nHallo Welt!");
+//   undo.undo();
+//   undo.undo();
+//   expect(undo.redo().text).toBe("Hallo!\nHallo Welt?");
+//   expect(undo.redo().text).toBe("Hallo!\nHallo Welt!");
+//   expect(undo.undo().text).toBe("Hallo!\nHallo Welt?");
+// });
+
+
+// it("clears steps when adding new steps in between", ({ expect }) => {
+//   let undo = new UndoText()
+//     .add(`first`)
+//     .add(`2nd`)
+//     .add("3rd")
+//     .add("4th");
+//   undo.undo();
+//   undo.undo();
+//   undo.add('5th');
+//   // console.log('test', undo.undos);
+//   expect(undo.undo().text, "2nd");
+//   // expect(undo.redo().text).toBe("5th");
+// });

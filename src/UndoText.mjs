@@ -4,19 +4,22 @@ export default class UndoText {
 
   #undos = [];
   #position = -1;
+  #previousText = null;
+  #currentText = null;
 
   SEPARATOR = '';
 
   add(text, additionalData = {}) {
-    if (this.last()) {
-      if (this.last().text === text || this.last().text === null || this.last().text === undefined) {
-        // no change
-        return;
+    if (text === this.#previousText || text === this.#currentText) {
+      return;
+    }
+    if (this.previous()) {
+      let previousText = this.previous().text === null ? this.#previousText : this.previous().text;
+      let diff = difflib.ndiff(previousText.split(this.SEPARATOR), text.split(this.SEPARATOR));
+      if (this.#undos[this.#position]) {
+        this.#undos[this.#position].text = null;
       }
-      let diff = difflib.ndiff(this.last().text.split(this.SEPARATOR), text.split(this.SEPARATOR));
-      if (this.#undos[this.#position-1]) {
-        delete this.#undos[this.#position-1].text;
-      }
+
       this.#undos.push({
         text,
         additionalData,
@@ -29,6 +32,7 @@ export default class UndoText {
         diff: {}
       });
     }
+    this.#previousText = text;
     this.#position++;
     return this;
   }
@@ -40,13 +44,18 @@ export default class UndoText {
 
     this.#position--;
 
+    const text = difflib.restore(this.#undos[this.#position + 1].diff, 1).join(this.SEPARATOR);
+
+    this.#currentText = text;
+
     return {
-      text: difflib.restore(this.#undos[this.#position + 1].diff, 1).join(this.SEPARATOR),
+      text,
       additionalData: this.#undos[this.#position + 1].additionalData
     };
   }
 
   redo() {
+    throw new Error('Not implemented');
     if (!this.#undos[this.#position] || !this.#undos[this.#position + 1]) {
       return null;
     }
@@ -59,7 +68,11 @@ export default class UndoText {
     };
   }
 
-  last() {
+  previous() {
     return this.#undos[this.#position];
+  }
+
+  get undos() {
+    return this.#undos;
   }
 }
