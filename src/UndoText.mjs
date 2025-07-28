@@ -13,6 +13,10 @@ export default class UndoText {
     if (text === this.#previousText || text === this.#currentText) {
       return;
     }
+    if (this.#position < this.#undos.length - 1) {
+      // cut off
+      this.#undos = this.#undos.splice(0, this.#position + 2);
+    }
     if (this.previous()) {
       let previousText = this.previous().text === null ? this.#previousText : this.previous().text;
       let diff = difflib.ndiff(previousText.split(this.SEPARATOR), text.split(this.SEPARATOR));
@@ -42,6 +46,9 @@ export default class UndoText {
       return null;
     }
 
+    // console.log(this.#undos[this.#position])
+
+
     this.#position--;
 
     const text = difflib.restore(this.#undos[this.#position + 1].diff, 1).join(this.SEPARATOR);
@@ -55,7 +62,6 @@ export default class UndoText {
   }
 
   redo() {
-    throw new Error('Not implemented');
     if (!this.#undos[this.#position] || !this.#undos[this.#position + 1]) {
       return null;
     }
@@ -63,8 +69,8 @@ export default class UndoText {
     this.#position++;
 
     return {
-      text: difflib.restore(this.#undos[this.#position - 1].diff, -1).join(this.SEPARATOR),
-      additionalData: this.#undos[this.#position - 1].additionalData
+      text: difflib.restore(this.#undos[this.#position].diff, 2).join(this.SEPARATOR),
+      additionalData: this.#undos[this.#position].additionalData
     };
   }
 

@@ -78,7 +78,7 @@ class FocusEditorCore {
     }
     this.target = targetHTMLElement;
 
-    this.__addUndoStepDebounced = helper.debounce(this.#addUndoStep, 500);
+    this.__addUndoStepDebounced = helper.debounce(this.#addUndoStep, 200);
 
     BrowserFixes.noDivInsideContentEditable(this.target);
 
