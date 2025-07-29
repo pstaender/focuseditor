@@ -411,7 +411,22 @@ class FocusEditorCore {
   #onKeyDown(event, editor) {
     editor.#debugLog("onKeyDown", event.key);
 
-    if (this.#isUndoEnabled() && (event.metaKey || event.ctrlKey) && event.key === "z") {
+    if (event.key === "Enter" && !event.shiftKey) {
+      const currentParagraph = helper.currentBlockWithCaret();
+      if (currentParagraph) {
+        if (this.#onHittingEnter) {
+          event.preventDefault();
+          this.#onHittingEnter(event, currentParagraph);
+        }
+        return;
+      }
+    }
+
+    if (
+      this.#isUndoEnabled() &&
+      (event.metaKey || event.ctrlKey) &&
+      event.key === "z"
+    ) {
       if (event.shiftKey) {
         this.#redoStep(event);
       } else {
@@ -467,27 +482,24 @@ class FocusEditorCore {
 
     if (event.key === "Enter") {
       // Browser blindly copies all classes to new created element: we are removing them here
-      if (currentParagraph) {
-        this.POSSIBLE_BLOCK_CLASSES.forEach((tagName) =>
-          currentParagraph.classList.remove(tagName),
-        );
-        currentParagraph.classList.add("block");
+      // if (currentParagraph) {
+      //   this.POSSIBLE_BLOCK_CLASSES.forEach((tagName) =>
+      //     currentParagraph.classList.remove(tagName),
+      //   );
+      //   currentParagraph.classList.add("block");
 
-        if (currentParagraph.previousSibling.classList.contains("code-block")) {
-          if (
-            !currentParagraph.previousSibling.classList.contains(
-              "code-block-end",
-            ) ||
-            currentParagraph.innerText.endsWith("```")
-          ) {
-            currentParagraph.classList.add("code-block");
-          }
-        }
-      }
+      //   if (currentParagraph.previousSibling.classList.contains("code-block")) {
+      //     if (
+      //       !currentParagraph.previousSibling.classList.contains(
+      //         "code-block-end",
+      //       ) ||
+      //       currentParagraph.innerText.endsWith("```")
+      //     ) {
+      //       currentParagraph.classList.add("code-block");
+      //     }
+      //   }
+      // }
 
-      if (this.#onAfterHittingEnter) {
-        this.#onAfterHittingEnter();
-      }
       return;
     }
 
@@ -612,25 +624,59 @@ class FocusEditorCore {
     Cursor.setCurrentCursorPosition(el.innerText.length, el);
   }
 
-  #onAfterHittingEnter() {
-    let current = helper.currentBlockWithCaret();
+  #onHittingEnter(event, current) {
+    const div = document.createElement("div");
+    div.innerHTML = "";
+    div.setAttribute("class", "block");
+    const cursorPosition = Cursor.getCurrentCursorPosition(current);
+
+    let previousElement = current.previousElementSibling;
+
+    if (cursorPosition === 0) {
+      current.before(div);
+      Cursor.setCurrentCursorPosition(0, current);
+      if (current.classList.contains("code-block")) {
+        this.#updateAllVisibleElements();
+      }
+      return;
+    } else {
+      if (cursorPosition < current.innerText.length) {
+        // split text
+        let text = current.innerText;
+        current.innerText = text.substr(0, cursorPosition);
+        div.innerText = text.substr(cursorPosition);
+      }
+      current.after(div);
+      previousElement = current;
+      Cursor.setCurrentCursorPosition(0, div);
+      current = div;
+    }
+
+    if (!current) current = helper.currentBlockWithCaret();
     if (!current) return;
-    if (current.classList.contains("code-block")) return;
+    if (current.classList.contains("code-block")) {
+      this.#updateAllVisibleElements();
+      return;
+    }
 
     if (this.target.parentElement.getAttribute("autocomplete") === "off") {
       return;
     }
 
     const setCursorToEndAndUpdate = () => {
+      if (!current) current = helper.currentBlockWithCaret();
+
       this.#updateAllVisibleElements();
-      let current = helper.currentBlockWithCaret();
-      Cursor.setCurrentCursorPosition(current.innerText.length, current);
+      // setTimeout(() => {
+        Cursor.setCurrentCursorPosition(current.innerText.length, current);
+      // }, 1);
     };
 
     const previousAutocompletePattern =
-      current.previousSibling?.dataset?.autocompletePattern || "";
+      previousElement.dataset?.autocompletePattern || "";
     const insertedElementText = current.innerText;
-    const previousText = current.previousSibling.innerText;
+    const previousText = previousElement.innerText;
+
     const lineBeginsWithUnorderedList =
       /^(\s*-\s+|\s*\*\s+|\s*•\s+|\s*\*\s+|\s*\+\s+|\>+\s*)(.*)$/;
     const lineBeginsWithOrderedList = /^(\s*)(\d+)(\.|\.\)|\))\s.+/;
@@ -644,10 +690,11 @@ class FocusEditorCore {
       current.innerText = matches[1] + previousTextTrimmed;
       if (
         previousAutocompletePattern &&
-        current.previousSibling.innerText === matches[1]
+        previousElement.innerText === matches[1]
       ) {
         current.innerText = previousTextTrimmed || "";
-        current.previousSibling.innerText = "";
+        previousElement.innerText = "";
+        this.#updateAllVisibleElements();
         return;
       }
       current.dataset.autocompletePattern = matches[1];
@@ -666,10 +713,10 @@ class FocusEditorCore {
         current.innerText = autocompleteText + previousTextTrimmed;
         if (
           previousAutocompletePattern &&
-          current.previousSibling.innerText === current.innerText
+          previousElement.innerText === current.innerText
         ) {
           current.innerText = previousTextTrimmed || "";
-          current.previousSibling.innerText = "";
+          previousElement.innerText = "";
           return;
         }
         setCursorToEndAndUpdate();
@@ -677,6 +724,7 @@ class FocusEditorCore {
         // TODO: cleanup dataset.autocompletePattern afterwards
       }
     }
+    // this.#updateAllVisibleElements()
   }
 
   #dispatchInputEvent() {
@@ -689,7 +737,6 @@ class FocusEditorCore {
     if (!undo) {
       return;
     }
-
 
     this.replaceText(undo.text);
     this.#dispatchInputEvent();
@@ -707,19 +754,15 @@ class FocusEditorCore {
           Cursor.setCurrentCursorPosition(
             currentParagraphCaret,
             currentParagraph,
-
           );
         } else {
           currentParagraph = this.target.children[this.target.children.length];
-
         }
         Cursor.setCurrentCursorPosition(
           currentParagraphCaret,
           currentParagraph,
-
         );
-      }, 1)
-
+      }, 1);
     }
   }
 
@@ -748,11 +791,18 @@ class FocusEditorCore {
     this.replaceText(redo.text);
     this.#dispatchInputEvent();
     // restore caret
-    const { currentParagraphCaret, currentParagraphIndex } = redo.additionalData;
-    if (currentParagraphCaret !== undefined && currentParagraphIndex !== undefined) {
+    const { currentParagraphCaret, currentParagraphIndex } =
+      redo.additionalData;
+    if (
+      currentParagraphCaret !== undefined &&
+      currentParagraphIndex !== undefined
+    ) {
       const currentParagraph = this.target.children[currentParagraphIndex];
       if (currentParagraph) {
-        Cursor.setCurrentCursorPosition(currentParagraphCaret, currentParagraph);
+        Cursor.setCurrentCursorPosition(
+          currentParagraphCaret,
+          currentParagraph,
+        );
       }
     }
   }
