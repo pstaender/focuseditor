@@ -7,7 +7,7 @@ export default class UndoText {
   #previousText = null;
   #currentText = null;
 
-  SEPARATOR = '';
+  SEPARATOR = '\n';
 
   add(text, additionalData = {}) {
     if (text === this.#previousText || text === this.#currentText) {

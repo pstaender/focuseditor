@@ -405,7 +405,7 @@ class FocusEditorCore {
   }
 
   #isUndoEnabled() {
-    return !this.#hasManyElements() && this.#maxUndoSteps && this.#maxUndoSteps > 0;
+    return this.#maxUndoSteps && this.#maxUndoSteps > 0;
   }
 
   #onKeyDown(event, editor) {
