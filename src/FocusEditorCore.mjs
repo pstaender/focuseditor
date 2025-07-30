@@ -90,6 +90,10 @@ class FocusEditorCore {
    * @param {string} text
    */
   replaceText(text, { clearHistory = false } = {}) {
+    // TODO: not sure that this rule is a good idea? But often empty text is set as \n…
+    if (text === '\n') {
+      text = '';
+    }
     this.target.innerHTML = md2html.innerTextToHtml(text, document);
     this.#updateChildrenElementsWithMarkdownClasses();
     this.#addCssClassToBlockWithCaret();
@@ -177,7 +181,8 @@ class FocusEditorCore {
     this.target.addEventListener("keyup", (ev) => this.#onKeyUp(ev, this));
     this.target.addEventListener("keydown", (ev) => this.#onKeyDown(ev, this));
     this.target.addEventListener("click", (ev) => this.#onClick(ev, this));
-    this.target.addEventListener("paste", (ev) => this.#afterPaste(ev, this));
+    this.target.addEventListener("paste", (ev) => this.#onPaste(ev, this));
+    this.target.addEventListener("copy", (ev) => this.#onCopy(ev, this));
     this.target.parentElement.addEventListener("scroll", (ev) =>
       this.#onScroll(ev, this),
     );
@@ -372,17 +377,35 @@ class FocusEditorCore {
     if (!this.target.querySelector(".block")) {
       return;
     }
-    if (this.target.innerText.length === 0 || this.target.innerText === "\n") {
-      this.target.querySelector(".block").dataset.placeholder =
-        this.#placeholder;
-    } else {
+    // for aesthetic reasons: add a small delay to ensure the placeholder is removed before checking if the editor is empty (sometimes the editor is not empty yet during check)
+    setTimeout(() => {
       this.target
         .querySelectorAll(".block[data-placeholder]")
         .forEach((el) => delete el.dataset.placeholder);
-    }
+      if (this.target.textContent === "" && this.target.querySelectorAll(".block").length === 1) {
+        this.target.querySelector(".block").dataset.placeholder =
+          this.#placeholder;
+      }
+    }, 1);
+
   }
 
-  #afterPaste(event, editor) {
+  #onCopy(event) {
+    event.preventDefault();
+    const selection = document.getSelection();
+    const copiedText = selection.toString();
+    event.clipboardData.setData('text/plain', copiedText);
+  }
+
+  #onPaste(event) {
+    let paste = (event.clipboardData || window.clipboardData).getData('text');
+
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return false;
+    selection.deleteFromDocument();
+    selection.getRangeAt(0).insertNode(document.createTextNode(paste));
+
+    event.preventDefault();
     setTimeout(async () => {
       this.refresh();
       let offset = this.target.innerText.length - this.#textLengthOnKeyDown + 2;
@@ -393,7 +416,7 @@ class FocusEditorCore {
     }, 1);
   }
 
-  #onClick(event, editor) {
+  #onClick(event) {
     this.#addCssClassToBlockWithCaret();
     if (event.isTrusted) {
       this.#checkPlaceholder();
@@ -410,6 +433,9 @@ class FocusEditorCore {
 
   #onKeyDown(event, editor) {
     editor.#debugLog("onKeyDown", event.key);
+
+    this.#checkPlaceholder();
+    this.#addCssClassToBlockWithCaret();
 
     if (event.key === "Enter" && !event.shiftKey) {
       const currentParagraph = helper.currentBlockWithCaret();
@@ -439,7 +465,6 @@ class FocusEditorCore {
 
     this.#textLengthOnKeyDown = this.target.innerText.length;
 
-    this.#addCssClassToBlockWithCaret();
 
     if ((event.ctrlKey && event.altKey) || (event.altKey && event.shiftKey)) {
       for (let name in this.#keyboardShortcuts) {
@@ -478,29 +503,6 @@ class FocusEditorCore {
 
     if (this.#maxUndoSteps && this.#maxUndoSteps > 0) {
       this.__addUndoStepDebounced(currentParagraph);
-    }
-
-    if (event.key === "Enter") {
-      // Browser blindly copies all classes to new created element: we are removing them here
-      // if (currentParagraph) {
-      //   this.POSSIBLE_BLOCK_CLASSES.forEach((tagName) =>
-      //     currentParagraph.classList.remove(tagName),
-      //   );
-      //   currentParagraph.classList.add("block");
-
-      //   if (currentParagraph.previousSibling.classList.contains("code-block")) {
-      //     if (
-      //       !currentParagraph.previousSibling.classList.contains(
-      //         "code-block-end",
-      //       ) ||
-      //       currentParagraph.innerText.endsWith("```")
-      //     ) {
-      //       currentParagraph.classList.add("code-block");
-      //     }
-      //   }
-      // }
-
-      return;
     }
 
     const selectionRange = Math.abs(
@@ -626,7 +628,7 @@ class FocusEditorCore {
 
   #onHittingEnter(event, current) {
     const div = document.createElement("div");
-    div.innerHTML = "";
+    div.innerHTML = md2html.EMPTY_LINE_HTML_PLACEHOLDER;
     div.setAttribute("class", "block");
     const cursorPosition = Cursor.getCurrentCursorPosition(current);
 
@@ -667,9 +669,7 @@ class FocusEditorCore {
       if (!current) current = helper.currentBlockWithCaret();
 
       this.#updateAllVisibleElements();
-      // setTimeout(() => {
-        Cursor.setCurrentCursorPosition(current.innerText.length, current);
-      // }, 1);
+      Cursor.setCurrentCursorPosition(current.innerText.length, current);
     };
 
     const previousAutocompletePattern =

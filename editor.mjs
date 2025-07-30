@@ -181,6 +181,13 @@ document
           focusEditor.removeAttribute("image-preview");
         }
       }
+      if (input.id === "highlight-current-paragraph") {
+        if (input.checked) {
+          focusEditor.classList.add("highlight-current-paragraph");
+        } else {
+          focusEditor.classList.remove("highlight-current-paragraph");
+        }
+      }
       localStorage.setItem(`${localStorageKey}-${input.id}`, input.checked);
     });
     input.dispatchEvent(new Event("change"));

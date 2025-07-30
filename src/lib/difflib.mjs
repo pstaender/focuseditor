@@ -41,7 +41,7 @@ Class Differ:
 
 // Requires
 const {floor, max, min} = Math;
-import Heap from './Heap';
+import Heap from './Heap.mjs';
 
 // Helper functions
 const _calculateRatio = function(matches, length) {

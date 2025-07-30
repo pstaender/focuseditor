@@ -86,9 +86,8 @@ focus-editor {
       transition:
         opacity var(--transition-duration),
         color var(--transition-duration),
+        background-color 0.05s,
         transform var(--transition-duration);
-      /* transition:
-        all var(--transition-duration); */
     }
 
     .code-block {
@@ -164,8 +163,10 @@ focus-editor {
       margin-right: calc(0.5 * var(--space-left));
       padding-left: 1rem;
       position: relative;
-
       padding-right: 0.25rem;
+
+      width: calc(100% - calc(var(--margin-left-factor) * var(--space-left) + 2rem) - 1.25rem);
+
       &:before {
         content: "";
         position: absolute;
@@ -393,6 +394,18 @@ focus-editor[image-preview] {
           }
         }
       }
+    }
+  }
+}
+focus-editor.highlight-current-paragraph {
+  .block:not(.code-block):not(.blockquote) {
+    transition:
+      opacity var(--transition-duration),
+      color var(--transition-duration),
+      background-color 0.1s,
+      transform var(--transition-duration);
+    &:focus, &.with-caret {
+      background-color: var(--color-grey-very-light);
     }
   }
 }

@@ -9,7 +9,7 @@
 - zero dependencies
 - responsive
 - lightweight
-  - ~50Kbytes *un*compressed <-> ~20Kbytes compressed
+  - ~80Kbytes *un*compressed <-> ~20Kbytes compressed
 
 ### Usage
 
