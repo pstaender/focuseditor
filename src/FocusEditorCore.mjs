@@ -404,6 +404,8 @@ class FocusEditorCore {
     if (!selection.rangeCount) return false;
     selection.deleteFromDocument();
     selection.getRangeAt(0).insertNode(document.createTextNode(paste));
+    this.#textUndo.add(this.getMarkdown());
+    this.#dispatchInputEvent();
 
     event.preventDefault();
     setTimeout(async () => {
@@ -649,10 +651,14 @@ class FocusEditorCore {
         div.innerText = text.substr(cursorPosition);
       }
       current.after(div);
+      if (current.classList.contains("code-block") && !current.classList.contains("code-block-end")) {
+        div.classList.add("code-block");
+      }
       previousElement = current;
       Cursor.setCurrentCursorPosition(0, div);
       current = div;
     }
+
 
     if (!current) current = helper.currentBlockWithCaret();
     if (!current) return;
