@@ -2,6 +2,7 @@ import * as md2html from "./md2html.mjs";
 import * as helper from "./helper.mjs";
 import BrowserFixes from "./BrowserFixes.mjs";
 import Cursor from "./Cursor.mjs";
+import UndoText from "./UndoText.mjs";
 
 /** Focus Editor Core class creates the editable content element and manages all its' changes on the text */
 class FocusEditorCore {
@@ -12,6 +13,9 @@ class FocusEditorCore {
   #editorCaretPosition = 0;
   #textLengthOnKeyDown = 0;
   #placeholder = "";
+  #maxUndoSteps = 200;
+  #textUndo = new UndoText();
+
   #keyboardShortcuts = {
     refresh: {
       accessKey: "KeyR",
@@ -26,7 +30,7 @@ class FocusEditorCore {
       },
     },
     focus: {
-      handler: (ev) => {
+      handler: () => {
         if (this.target.parentElement.hasAttribute("focus")) {
           this.target.parentElement.removeAttribute("focus");
         } else {
@@ -36,7 +40,7 @@ class FocusEditorCore {
       accessKey: "KeyX",
     },
     images: {
-      handler: (ev) => {
+      handler: () => {
         if (this.target.parentElement.hasAttribute("image-preview")) {
           this.target.parentElement.removeAttribute("image-preview");
         } else {
@@ -74,6 +78,8 @@ class FocusEditorCore {
     }
     this.target = targetHTMLElement;
 
+    this.__addUndoStepDebounced = helper.debounce(this.#addUndoStep, 200);
+
     BrowserFixes.noDivInsideContentEditable(this.target);
 
     this.#prepareTargetHTMLElement(initialText);
@@ -83,13 +89,23 @@ class FocusEditorCore {
    * Replaces the current text with new text
    * @param {string} text
    */
-  replaceText(text) {
+  replaceText(text, { clearHistory = false, dontAddToHistory = false } = {}) {
+    // TODO: not sure that this rule is a good idea? But often empty text is set as \n…
+    if (text === "\n") {
+      text = "";
+    }
     this.target.innerHTML = md2html.innerTextToHtml(text, document);
     this.#updateChildrenElementsWithMarkdownClasses();
     this.#addCssClassToBlockWithCaret();
     this.target.parentElement.scroll({ top: 0 });
     this.target.focus();
     this.target.click();
+    if (clearHistory) {
+      this.#textUndo.clear();
+    }
+    if (!dontAddToHistory) {
+      this.#textUndo.add(this.getMarkdown());
+    }
   }
 
   /**
@@ -100,9 +116,7 @@ class FocusEditorCore {
   }
 
   #visibleChildren() {
-    return [...this.allChildren()].filter((el) =>
-      helper.elementIsVisible(el),
-    );
+    return [...this.allChildren()].filter((el) => helper.elementIsVisible(el));
   }
 
   /**
@@ -112,11 +126,11 @@ class FocusEditorCore {
    */
   refresh() {
     let cursor = Cursor.getCurrentCursorPosition(this.target);
-    const lengthBefore = this.target.innerText.length;
+    const lengthBefore = this.target.textContent.length;
 
     this.replaceText(this.getMarkdown());
 
-    const diffCursorPosition = lengthBefore - this.target.innerText.length
+    const diffCursorPosition = lengthBefore - this.target.textContent.length;
 
     if (cursor === 0) {
       // Firefox issue
@@ -131,29 +145,27 @@ class FocusEditorCore {
   }
 
   /**
-   * Returns the markdown/commonmark text.
-   * @returns {string} Markdown text
+   * Returns the plain text.
+   * @returns {string} plain text
    */
   getMarkdown() {
     let text = [];
-    if (!this.target.querySelector(".block") && this.target.innerText) {
+    if (!this.target.querySelector(".block") && this.target.textContent) {
       // firefox bug
       if (!helper.isFirefox()) {
         console.error("No .block element found");
       }
-      return this.target.innerText;
+      return this.target.textContent;
     }
     this.target
       .querySelectorAll(".block")
-      .forEach((el) =>
-        text.push(String(el.innerText).replace(/\n+$/, "") /* .trimEnd()*/),
-      );
+      .forEach((el) => text.push(String(el.textContent).replace(/\n+$/, "")));
 
     text = text.join("\n");
 
     // sometimes a browser (firefox) screws up blocks. user inner text instead
-    return text.trim() === "" && this.target.innerText
-      ? this.target.innerText
+    return text.trim() === "" && this.target.textContent
+      ? this.target.textContent
       : text;
   }
 
@@ -161,23 +173,26 @@ class FocusEditorCore {
   #prepareTargetHTMLElement(text) {
     this.target.innerHTML = md2html.innerTextToHtml(
       helper.removeFirstLineBreak(text),
-      document
+      document,
     );
     this.#updateChildrenElementsWithMarkdownClasses();
 
     this.target.classList.add("focus-editor");
     this.target.contentEditable = true;
-    this.target.addEventListener("keyup", (ev) => this.#onKeyUp(ev, this));
-    this.target.addEventListener("keydown", (ev) => this.#onKeyDown(ev, this));
-    this.target.addEventListener("click", (ev) => this.#onClick(ev, this));
-    this.target.addEventListener("paste", (ev) => this.#afterPaste(ev, this));
+    this.target.setAttribute("role", "textbox");
+    this.target.setAttribute("aria-multiline", "true");
+    this.target.addEventListener("keyup", (ev) => this.#onKeyUp(ev));
+    this.target.addEventListener("keydown", (ev) => this.#onKeyDown(ev));
+    this.target.addEventListener("click", (ev) => this.#onClick(ev));
+    this.target.addEventListener("paste", (ev) => this.#onPaste(ev));
+    this.target.addEventListener("copy", (ev) => this.#onCopy(ev));
     this.target.parentElement.addEventListener("scroll", (ev) =>
-      this.onScroll(ev, this),
+      this.#onScroll(ev, this),
     );
   }
 
   #hasManyElements() {
-    return this.allChildren().length > 500;
+    return this.allChildren().length > 700;
   }
 
   #updateChildrenElementsWithMarkdownClasses() {
@@ -312,11 +327,13 @@ class FocusEditorCore {
     const current = helper.currentBlockWithCaret();
     this.#storeLastCaretPosition();
 
-    const caretPosition = Cursor.getCurrentCursorPosition(helper.currentBlockWithCaret());
+    const caretPosition = Cursor.getCurrentCursorPosition(
+      helper.currentBlockWithCaret(),
+    );
 
     if (this.#tabSize === "\t") {
       if (event.shiftKey) {
-        if (current.textContent.substring(0, caretPosition).trim() === '') {
+        if (current.textContent.substring(0, caretPosition).trim() === "") {
           current.innerHTML = current.innerHTML.replace(/^(\t){1}/, "");
           this.#restoreLastCaretPosition(helper.currentBlockWithCaret(), {
             offset: -1,
@@ -327,7 +344,10 @@ class FocusEditorCore {
         if (caretPosition === 0) {
           current.innerHTML = "\t" + current.innerHTML;
         } else {
-          current.textContent = current.textContent.substring(0, caretPosition) + "\t" + current.textContent.substring(caretPosition);
+          current.textContent =
+            current.textContent.substring(0, caretPosition) +
+            "\t" +
+            current.textContent.substring(caretPosition);
         }
         this.#restoreLastCaretPosition(helper.currentBlockWithCaret(), {
           offset: 1,
@@ -338,7 +358,7 @@ class FocusEditorCore {
 
     if (event.shiftKey) {
       current.innerHTML = current.innerHTML.replace(
-        new RegExp(`^(&nbsp;|\s){1,${this.#tabSize}}`),
+        new RegExp(`^(&nbsp;| ){1,${this.#tabSize}}`),
         "",
       );
       this.#restoreLastCaretPosition(helper.currentBlockWithCaret(), {
@@ -357,17 +377,42 @@ class FocusEditorCore {
     if (!this.#placeholder) {
       return;
     }
-    if (!this.target.querySelector('.block')) {
+    if (!this.target.querySelector(".block")) {
       return;
     }
-    if (this.target.innerText.length === 0 || this.target.innerText === '\n') {
-      this.target.querySelector('.block').dataset.placeholder = this.#placeholder;
-    } else {
-      this.target.querySelectorAll('.block[data-placeholder]').forEach(el => delete el.dataset.placeholder);
-    }
+    // for aesthetic reasons: add a small delay to ensure the placeholder is removed before checking if the editor is empty (sometimes the editor is not empty yet during check)
+    setTimeout(() => {
+      this.target
+        .querySelectorAll(".block[data-placeholder]")
+        .forEach((el) => delete el.dataset.placeholder);
+      if (
+        this.target.textContent === "" &&
+        this.target.querySelectorAll(".block").length === 1
+      ) {
+        this.target.querySelector(".block").dataset.placeholder =
+          this.#placeholder;
+      }
+    }, 1);
   }
 
-  #afterPaste(event, editor) {
+  #onCopy(event) {
+    event.preventDefault();
+    const selection = document.getSelection();
+    const copiedText = selection.toString().replace(/\xA0/g, " ");
+    event.clipboardData.setData("text/plain", copiedText);
+  }
+
+  #onPaste(event) {
+    let paste = (event.clipboardData || window.clipboardData).getData("text");
+
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return false;
+    selection.deleteFromDocument();
+    selection.getRangeAt(0).insertNode(document.createTextNode(paste));
+    this.#textUndo.add(this.getMarkdown());
+    this.#dispatchInputEvent();
+
+    event.preventDefault();
     setTimeout(async () => {
       this.refresh();
       let offset = this.target.innerText.length - this.#textLengthOnKeyDown + 2;
@@ -378,25 +423,54 @@ class FocusEditorCore {
     }, 1);
   }
 
-  #onClick(event, editor) {
+  #onClick(event) {
     this.#addCssClassToBlockWithCaret();
     if (event.isTrusted) {
       this.#checkPlaceholder();
     }
   }
 
-  onScroll(event, editor) {
+  #onScroll() {
     this.#updateAllVisibleElements();
   }
 
-  #onKeyDown(event, editor) {
-    editor.#debugLog("onKeyDown", event.key);
+  #isUndoEnabled() {
+    return this.#maxUndoSteps && this.#maxUndoSteps > 0;
+  }
+
+  #onKeyDown(event) {
+    this.#debugLog("onKeyDown", event.key);
+
+    this.#checkPlaceholder();
+    this.#addCssClassToBlockWithCaret();
+
+    if (event.key === "Enter" && !event.shiftKey) {
+      const currentParagraph = helper.currentBlockWithCaret();
+      if (currentParagraph) {
+        if (this.#onHittingEnter) {
+          event.preventDefault();
+          this.#onHittingEnter(event, currentParagraph);
+        }
+        return;
+      }
+    }
+
+    if (
+      this.#isUndoEnabled() &&
+      (event.metaKey || event.ctrlKey) &&
+      event.key === "z"
+    ) {
+      if (event.shiftKey) {
+        this.#redoStep(event);
+      } else {
+        this.#undoStep(event);
+      }
+      return;
+    }
 
     this.#storeEditorCaretPosition();
 
     this.#textLengthOnKeyDown = this.target.innerText.length;
-
-    this.#addCssClassToBlockWithCaret();
 
     if ((event.ctrlKey && event.altKey) || (event.altKey && event.shiftKey)) {
       for (let name in this.#keyboardShortcuts) {
@@ -418,8 +492,8 @@ class FocusEditorCore {
     }
   }
 
-  #onKeyUp(event, editor) {
-    editor.#debugLog("onKeyUp", event.key);
+  #onKeyUp(event) {
+    this.#debugLog("onKeyUp", event.key);
 
     if (event.isComposing) {
       return;
@@ -433,31 +507,8 @@ class FocusEditorCore {
 
     const currentParagraph = helper.currentBlockWithCaret();
 
-    if (event.key === "Enter") {
-      // Browser blindly copies all classes to new created element: we are removing them here
-      if (currentParagraph) {
-        this.POSSIBLE_BLOCK_CLASSES.forEach((tagName) =>
-          currentParagraph.classList.remove(tagName),
-        );
-        currentParagraph.classList.add("block");
-
-        if (currentParagraph.previousSibling.classList.contains("code-block")) {
-          if (
-            !currentParagraph.previousSibling.classList.contains(
-              "code-block-end",
-            ) ||
-            currentParagraph.innerText.endsWith("```")
-          ) {
-            currentParagraph.classList.add("code-block");
-          }
-        }
-      }
-
-
-      if (this.#onAfterHittingEnter) {
-        this.#onAfterHittingEnter();
-      }
-      return;
+    if (this.#maxUndoSteps && this.#maxUndoSteps > 0) {
+      this.__addUndoStepDebounced(currentParagraph);
     }
 
     const selectionRange = Math.abs(
@@ -481,23 +532,13 @@ class FocusEditorCore {
 
     if (helper.isFirefox() && !this.target.querySelector(".block")) {
       /* Firefox Bug (1): When selecting all text and clean it, not div is there anymore */
+      /* eslint-disable no-unused-vars */
       try {
         Cursor.setCurrentCursorPosition(0, this.target.querySelector(".block"));
-      } catch (error) {
+      } catch (_) {
         this.refresh();
         return;
       }
-    }
-
-    if (
-      helper.isFirefox() &&
-      currentParagraph &&
-      currentParagraph.innerText.trim() === "" &&
-      event.key === " "
-    ) {
-      // TODO: prevent firefox deleting the spaces
-      // console.log(event, currentParagraph.innerText)
-      // return;
     }
 
     if (
@@ -520,7 +561,6 @@ class FocusEditorCore {
       if (helper.isFirefox()) {
         let divs = this.target.querySelectorAll("div:not(.block)");
         if (divs.length > 0) {
-          console.log(divs);
           divs.forEach((el) => el.classList.add("block"));
           divs[0].click();
           divs[0].focus();
@@ -562,7 +602,7 @@ class FocusEditorCore {
           this.#storeLastCaretPosition();
           this.#updateAllVisibleElements();
           this.#restoreLastCaretPosition();
-        }, 350);
+        }, 200);
         this.__renderMarkdownToHtmlDebounced();
         return;
       }
@@ -581,28 +621,73 @@ class FocusEditorCore {
     Cursor.setCurrentCursorPosition(el.innerText.length, el);
   }
 
-  #onAfterHittingEnter() {
-    let current = helper.currentBlockWithCaret();
+  #onHittingEnter(event, current) {
+    const div = document.createElement("div");
+    div.innerHTML = md2html.EMPTY_LINE_HTML_PLACEHOLDER;
+    div.setAttribute("class", "block");
+    const cursorPosition = Cursor.getCurrentCursorPosition(current);
+
+    let previousElement = current.previousElementSibling;
+    let textIsSplitAt = 0;
+
+    if (cursorPosition === 0) {
+      current.before(div);
+      Cursor.setCurrentCursorPosition(0, current);
+      if (current.classList.contains("code-block")) {
+        this.#updateAllVisibleElements();
+      }
+      return;
+    } else {
+      if (cursorPosition < current.innerText.length) {
+        // split text
+        let text = current.innerText;
+        current.innerText = text.substr(0, cursorPosition);
+        div.innerText = text.substr(cursorPosition);
+        textIsSplitAt = cursorPosition;
+      }
+      current.after(div);
+      if (
+        current.classList.contains("code-block") &&
+        !current.classList.contains("code-block-end")
+      ) {
+        div.classList.add("code-block");
+      }
+      previousElement = current;
+      Cursor.setCurrentCursorPosition(0, div);
+      current = div;
+    }
+
+    if (!current) current = helper.currentBlockWithCaret();
     if (!current) return;
-    if (current.classList.contains("code-block")) return;
+    if (current.classList.contains("code-block")) {
+      this.#updateAllVisibleElements();
+      return;
+    }
 
     if (this.target.parentElement.getAttribute("autocomplete") === "off") {
       return;
     }
 
-    const setCursorToEndAndUpdate = () => {
+    const setCursorToNewPositionAndUpdate = () => {
+      if (!current) current = helper.currentBlockWithCaret();
+
       this.#updateAllVisibleElements();
-      let current = helper.currentBlockWithCaret();
-      Cursor.setCurrentCursorPosition(current.innerText.length, current);
+      Cursor.setCurrentCursorPosition(
+        textIsSplitAt > 0
+          ? current.dataset.autocompletePattern.length
+          : current.innerText.length,
+        current,
+      );
     };
 
     const previousAutocompletePattern =
-      current.previousSibling?.dataset?.autocompletePattern || "";
+      previousElement.dataset?.autocompletePattern || "";
     const insertedElementText = current.innerText;
-    const previousText = current.previousSibling.innerText;
+    const previousText = previousElement.innerText;
+
     const lineBeginsWithUnorderedList =
-      /^(\s*-\s+|\s*\*\s+|\s*•\s+|\s*\*\s+|\s*\+\s+|\>+\s*)(.*)$/;
-    const lineBeginsWithOrderedList = /^(\s*)(\d+)(\.|\.\))\s.+/;
+      /^(\s*-\s+|\s*\*\s+|\s*•\s+|\s*\*\s+|\s*\+\s+|>+\s*)(.*)$/;
+    const lineBeginsWithOrderedList = /^(\s*)(\d+)(\.|\.\)|\))\s.+/;
 
     let matches = previousText.match(lineBeginsWithUnorderedList);
 
@@ -613,14 +698,15 @@ class FocusEditorCore {
       current.innerText = matches[1] + previousTextTrimmed;
       if (
         previousAutocompletePattern &&
-        current.previousSibling.innerText === matches[1]
+        previousElement.innerText === matches[1]
       ) {
         current.innerText = previousTextTrimmed || "";
-        current.previousSibling.innerText = "";
+        previousElement.innerText = "";
+        this.#updateAllVisibleElements();
         return;
       }
       current.dataset.autocompletePattern = matches[1];
-      setCursorToEndAndUpdate();
+      setCursorToNewPositionAndUpdate();
     } else {
       matches = previousText.match(lineBeginsWithOrderedList);
       if (matches && matches[2] && matches[3]) {
@@ -635,17 +721,73 @@ class FocusEditorCore {
         current.innerText = autocompleteText + previousTextTrimmed;
         if (
           previousAutocompletePattern &&
-          current.previousSibling.innerText === current.innerText
+          previousElement.innerText === current.innerText
         ) {
           current.innerText = previousTextTrimmed || "";
-          current.previousSibling.innerText = "";
+          previousElement.innerText = "";
           return;
         }
-        setCursorToEndAndUpdate();
         current.dataset.autocompletePattern = autocompleteText;
-        // TODO: cleanup dataset.autocompletePattern afterwards
+        setCursorToNewPositionAndUpdate();
       }
     }
+    delete previousElement.dataset.autocompletePattern;
+  }
+
+  #dispatchInputEvent() {
+    this.target.parentElement.dispatchEvent(new InputEvent("input"));
+  }
+
+  #undoStep(event) {
+    event.preventDefault();
+    const { text } = this.#textUndo.undo();
+    if (text === undefined) {
+      return;
+    }
+
+    let caretPosition = this.#textUndo.previous()?.additionalData?.caretPosition;
+
+    this.replaceText(text, { dontAddToHistory: true });
+    this.#dispatchInputEvent();
+    setTimeout(() => {
+      // restore caret
+      if (caretPosition === undefined) {
+        return;
+      }
+      Cursor.setCurrentCursorPosition(
+        caretPosition,
+        this.target,
+      );
+    }, 10);
+  }
+
+  #addUndoStep(currentParagraph) {
+    //#maxUndoSteps
+    this.#textUndo.add(
+      this.getMarkdown(),
+      currentParagraph?.parentNode
+        ? {
+            caretPosition: Cursor.getCurrentCursorPosition(this.target),
+          }
+        : {},
+    );
+  }
+
+  #redoStep(event) {
+    event.preventDefault();
+    const { text, additionalData } = this.#textUndo.redo();
+    if (text === undefined) {
+      return;
+    }
+    this.replaceText(text, { dontAddToHistory: true });
+    this.#dispatchInputEvent();
+    setTimeout(() => {
+      // restore caret
+      Cursor.setCurrentCursorPosition(
+        additionalData.caretPosition,
+        this.target,
+      );
+    }, 10);
   }
 
   /**

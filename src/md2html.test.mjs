@@ -4,9 +4,8 @@ import { JSDOM } from "jsdom";
 import * as md2html from "./md2html";
 
 function createDocument() {
-  return new JSDOM(
-    `<!DOCTYPE html><html><head></head><body></body></html>`,
-  ).window.document;
+  return new JSDOM(`<!DOCTYPE html><html><head></head><body></body></html>`)
+    .window.document;
 }
 
 /**
@@ -27,16 +26,15 @@ it("#innerTextToHtml", ({ expect }) => {
 
   expect(trws(md2html.innerTextToHtml(`\n# Headline\n`, document))).toBe(
     trws(`
-    <div class="block">&nbsp;</div>
+    <div class="block"><br></div>
     <div># Headline</div>
-    <div class="block">&nbsp;</div>`),
+    <div class="block"><br></div>`),
   );
 });
 
 it("#addCodeBlockClasses", ({ expect }) => {
   const document = createDocument();
   const div = document.createElement("div");
-
 
   div.innerHTML = md2html.innerTextToHtml(
     "\n# Headline\n```md\n# test\n**bold**\n```\n",
@@ -59,7 +57,6 @@ it("#addCodeBlockClasses", ({ expect }) => {
 
 it("#addParagraphClasses", ({ expect }) => {
   const document = createDocument();
-
   const div = document.createElement("div");
   div.innerHTML = md2html.innerTextToHtml(
     "## Very *important* Headline\n\n![**important** link](https://example.com/_wiki_)\n\nSome **text** with *some* different styles.\n\n```md\n# test\n**bold**\n```",
@@ -72,11 +69,11 @@ it("#addParagraphClasses", ({ expect }) => {
   expect([...elements].map((element) => element.outerHTML).join(`\n`)).toBe(
     trws(`
       <div class="block h2" id="very-important-headline">## Very <em>*important*</em> Headline</div>
-      <div class="block"></div>
+      <div class="block"><br></div>
       <div class="block"><a href="https://example.com/_wiki_" style="--url: url(https://example.com/_wiki_)" class="link image">![<strong>**important**</strong> link]<span>(https://example.com/_wiki_)</span></a></div>
-      <div class="block"></div>
-      <div class="block">Some <strong>**text**</strong> with *some* different styles.</div>
-      <div class="block"></div>
+      <div class="block"><br></div>
+      <div class="block">Some <strong>**text**</strong> with <em>*some*</em> different styles.</div>
+      <div class="block"><br></div>
       <div class="block code-block-start code-block">\`\`\`md</div>
       <div class="block code-block">#&nbsp;test</div>
       <div class="block code-block">**bold**</div>

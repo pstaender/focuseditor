@@ -5,13 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Focus Editor</title>
     <link rel="stylesheet" href="./editor.css?{{LAST_GIT_COMMIT_HASH}}" />
-    <link rel="icon" href="favicon.svg" sizes="any" type="image/svg+xml">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="icon" href="favicon.svg" sizes="any" type="image/svg+xml" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="description" content="Focus Editor for the focused editor" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="Focus Editor" />
     <meta name="theme-color" content="#00a0ff" />
-    <script src="./editor.mjs?{{LAST_GIT_COMMIT_HASH}}" defer type="module"></script>
+    <script
+      src="./editor.mjs?{{LAST_GIT_COMMIT_HASH}}"
+      defer
+      type="module"
+    ></script>
   </head>
   <body class="menu-at-the-top">
     <main>
@@ -37,7 +41,7 @@
             <button
               id="save"
               type="button"
-              onclick="confirm('Sure?') ? newFile() : false"
+              onclick="!document.querySelector('focus-editor').value.trim() || confirm('Sure?') ? newFile() : false"
             >
               New
             </button>
@@ -46,7 +50,9 @@
             <button id="save" type="button" onclick="save()">Save</button>
           </li>
           <li>
-            <button id="save" type="button" onclick="importFile()">Import</button>
+            <button id="save" type="button" onclick="importFile()">
+              Import
+            </button>
           </li>
           <li>
             <label for="remember">persist</label>
@@ -64,11 +70,16 @@
             <label for="image-preview">image preview</label>
             <input type="checkbox" id="image-preview" />
           </li>
+          <li>
+            <label for="highlight-current-paragraph"
+              >highlight current paragraph</label
+            >
+            <input type="checkbox" id="highlight-current-paragraph" />
+          </li>
         </ul>
       </nav>
       <div id="toggle-menu-button">
         <input type="checkbox" id="toggle-menu" name="toggle-menu" />
-
         <label for="toggle-menu">Show/Hide Menu</label>
       </div>
     </main>

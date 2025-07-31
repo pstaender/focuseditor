@@ -1,6 +1,6 @@
 {
   "name": "browser-focus-editor",
-  "version": "0.0.4",
+  "version": "1.0.0",
   "description": "focus editor for the focused editor",
   "license": "AGPL-3.0-only",
   "author": "Philipp Staender <pstaender@mailbox.org>",
@@ -11,6 +11,7 @@
     "dev": "vite .",
     "build": "rm -rf ./cjs && mkdir -p ./cjs && npx postcss src/css/*.css --use autoprefixer --no-map  -d cjs/ && esbuild src/FocusEditor.mjs --bundle --outfile=cjs/FocusEditor.js; npm run docs",
     "server": "npx http-server .",
+    "lint": "npx eslint src/*.mjs",
     "docs": "npx jsdoc -c jsdoc.json"
   },
   "devDependencies": {

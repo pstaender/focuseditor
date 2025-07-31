@@ -7,6 +7,7 @@ class FocusEditorWebComponent extends HTMLElement {
     "name",
     "tab-size",
     "buttons",
+    "placeholder",
     "autofocus",
     "readonly",
   ];
@@ -75,7 +76,7 @@ class FocusEditorWebComponent extends HTMLElement {
   };
 
   set value(text) {
-    this.editor.replaceText(text);
+    this.editor.replaceText(text, { clearHistory: true });
   }
 
   get value() {
@@ -88,6 +89,9 @@ class FocusEditorWebComponent extends HTMLElement {
     }
     if (name === "readonly") {
       this.editor.readonly = newValue != "true";
+    }
+    if (name === "placeholder") {
+      this.editor.placeholder = newValue;
     }
     if (name === "name") {
       this.#syncValueForTextareaElement(newValue);

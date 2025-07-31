@@ -9,6 +9,8 @@
 import * as helper from "./helper.mjs";
 
 export const EMPTY_LINE_HTML_PLACEHOLDER = `<br>`;
+const HTTP_HTTPS_URL_REGEX =
+  /(https?:\/\/)(www\.)?([-a-zA-Z0-9@:%._+~#=/;?&]{1,256})(.{0,1})/;
 
 export function innerTextToHtml(text, document) {
   text = text.replace(/\r/g, "\n");
@@ -18,7 +20,7 @@ export function innerTextToHtml(text, document) {
     l = l.replace(/\s+$/, "");
 
     if (l.trim() === "") {
-      return `<div class="block">&nbsp;</div>`;
+      return `<div class="block">${EMPTY_LINE_HTML_PLACEHOLDER}</div>`;
     }
     const el = document.createElement("div");
     el.textContent = l;
@@ -35,6 +37,11 @@ export function addCodeBlockClasses(elements, document) {
   let isCodeBlock = false;
   let codeBlocks = [];
 
+  const allCodeBlocksCount = [...elements].filter((l) =>
+    /^```/.test(l.textContent),
+  ).length;
+  let codeBlockIndex = 0;
+
   elements.forEach((el) => {
     if (el.tagName === "BR") {
       const div = document.createElement("div");
@@ -42,6 +49,7 @@ export function addCodeBlockClasses(elements, document) {
       if (isCodeBlock) {
         div.classList.add("code-block");
       }
+      div.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
       el.replaceWith(div);
       return;
     }
@@ -53,119 +61,149 @@ export function addCodeBlockClasses(elements, document) {
     const l = el.textContent;
 
     if (l.trim() === "") {
-      el.innerHTML = helper.whiteSpaceWorkaround();
+      el.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
     }
 
-    if (l.match(/^```/) && !isCodeBlock) {
-      isCodeBlock = true;
-      el.classList.add("code-block-start");
-      codeBlocks = [];
-    } else if (l.match(/^```$/) && isCodeBlock) {
-      isCodeBlock = false;
-      el.classList.add("code-block");
-      el.classList.add("code-block-end");
-    }
-
-    if (isCodeBlock) {
-      el.innerHTML = el.innerHTML.replace(/\s/g, "&nbsp;");
-
-      el.classList.add("code-block");
-      if (el.innerHTML.match(/[<>]/)) {
-        // remove html tags
-        el.textContent = el.innerText;
+    if (
+      allCodeBlocksCount % 2 === 1 &&
+      codeBlockIndex >= allCodeBlocksCount - 1
+    ) {
+      /* only add codeblock if it has also a closing ``` */
+    } else {
+      if (l.match(/^```/) && !isCodeBlock) {
+        isCodeBlock = true;
+        el.classList.add("code-block-start");
+        codeBlockIndex++;
+        codeBlocks = [];
+      } else if (l.match(/^```$/) && isCodeBlock) {
+        isCodeBlock = false;
+        codeBlockIndex++;
+        el.classList.add("code-block");
+        el.classList.add("code-block-end");
       }
-      codeBlocks.push(el);
+
+      if (isCodeBlock) {
+        el.innerHTML = el.innerHTML.replace(/\s/g, "&nbsp;");
+
+        el.classList.add("code-block");
+        if (el.innerHTML.match(/[<>]/)) {
+          // remove html tags
+          el.textContent = String(el.textContent);
+        }
+        codeBlocks.push(el);
+      }
     }
+
     if (el.innerHTML.trim() === "") {
       el.innerHTML = "<br>";
     }
     return el;
   });
-  // TODO: check
-  // check for unclosed code block
-  if (isCodeBlock && codeBlocks.length > 0) {
-    codeBlocks.forEach((el) => {
-      el.classList.remove("code-block");
-      el.classList.remove("code-block-start");
-    });
-  }
 }
 
 function inlineMarkdown(text) {
-    if (
-      text.startsWith("`") &&
-      text.endsWith("`") &&
-      text[1] != "`" &&
-      text !== "`"
-    ) {
-      return `<code>${text}</code>`;
-    }
+  if (
+    text.startsWith("`") &&
+    text.endsWith("`") &&
+    text[1] != "`" &&
+    text !== "`"
+  ) {
+    return `<code>${text}</code>`;
+  }
 
-    let html = helper.escapeHTMLEntities(text);
+  let html = helper.escapeHTMLEntities(text);
 
-    // find bold+italic
-    html = html.replace(
-      /([*\\]*)(\*{3}[^\s]+.*?\*{3})([*]*)/g,
-      (...matches) => {
-        if (matches[1] || matches[3]) {
-          return matches[0];
-        }
-        return `<strong><em>${matches[2]}</em></strong>`;
-      },
-    );
+  const transformUrlsToLinks = false; /* buggy */
 
-    // find *italic* / _italic_
-    html = html
-      .replace(/([*\\]*)(\*{1}[^\s]+.*?\*{1})([*]*)/g, (...matches) => {
-        if (matches[1] || matches[3]) {
-          return matches[0];
-        }
-        return `<em>${matches[2]}</em>`;
-      })
-      .replace(/([_\\]*)(_{1}[^\s]+.*?_{1})([_]*)/g, (...matches) => {
-        if (matches[1] || matches[3]) {
-          return matches[0];
-        }
-        return `<em>${matches[2]}</em>`;
-      });
-
-    // find **bold text** / __bold text__
-    html = html
-      .replace(/([*\\]*)(\*\*[^\s]+.*?\*\*)([*\\]*)/g, (...matches) => {
-        if (matches[1] || matches[3]) {
-          return matches[0];
-        }
-        return `<strong>${matches[2]}</strong>`;
-      })
-      .replace(/([_\\]*)(__[^\s]+.*?__)([_\\]*)/g, (...matches) => {
-        if (matches[1] || matches[3]) {
-          return matches[0];
-        }
-        return `<strong>${matches[2]}</strong>`;
-      });
-
-    // find strike through text
-    html = html.replace(
-      /([~\\])*(~~[^~][^\s]+.*?~~)([~])*/g,
-      (...matches) => {
-        if (matches[1] || matches[3]) {
-          return matches[0];
-        }
-        return `<s>${matches[2]}</s>`;
-      },
-    );
-
-    // find links
-    html = html.replace(/(\!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
-      let classes = ["link", matches[1] ? "image" : ""]
-        .filter((v) => !!v)
-        .join(" ");
-      let url = helper.stripHtml(matches[3]);
-      return `<a href="${url}" style="--url: url(${url})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${url})</span></a>`;
+  // find bold+italic
+  html = html
+    .replace(/([*\\]*)(\*{3}[^\s*]+.*?\*{3})([*]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<strong><em>${matches[2]}</em></strong>`;
+    })
+    .replace(/([_\\]*)(_{3}[^\s_]+.*?_{3})([_]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<strong><em>${matches[2]}</em></strong>`;
     });
 
-    return html;
+  // find *italic* / _italic_
+  html = html
+    .replace(/([*\\]*)(\*{1}[^\s*]+.*?\*{1})([*]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<em>${matches[2]}</em>`;
+    })
+    .replace(/([_\\]*)(_{1}[^\s_]+.*?_{1})([_]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<em>${matches[2]}</em>`;
+    });
 
+  // find **bold text** / __bold text__
+  html = html
+    .replace(/([*\\]*)(\*\*[^\s*]+.*?\*\*)([*\\]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<strong>${matches[2]}</strong>`;
+    })
+    .replace(/([_\\]*)(__[^\s_]+.*?__)([_\\]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<strong>${matches[2]}</strong>`;
+    });
+
+  // find strike through text
+  html = html.replace(/([~\\])*(~~[^~][^\s]+.*?~~)([~])*/g, (...matches) => {
+    if (matches[1] || matches[3]) {
+      return matches[0];
+    }
+    return `<s>${matches[2]}</s>`;
+  });
+
+  // find links
+  html = html.replace(/(!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
+    let classes = ["link", matches[1] ? "image" : ""]
+      .filter((v) => !!v)
+      .join(" ");
+    let url = helper.stripHtml(matches[3].split(/\s+/)[0]);
+    return `<a href="${url}" style="--url: url(${url})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${url})</span></a>`;
+  });
+
+  if (transformUrlsToLinks) {
+    html = html.replace(HTTP_HTTPS_URL_REGEX, (...matches) => {
+      let url = helper.htmlToText(
+        matches[1] + (matches[2] || "") + (matches[3] || ""),
+      );
+      if (matches[4] && matches[4].trim() !== "") {
+        // no action
+        return matches[0];
+      }
+      let unescapedMatches = url.match(HTTP_HTTPS_URL_REGEX);
+      if (unescapedMatches) {
+        let completeUrl =
+          unescapedMatches[1] +
+          (unescapedMatches[2] || "") +
+          (unescapedMatches[3] + "");
+        let a = document.createElement("A");
+        a.href = completeUrl;
+        a.classList.add("link", "inline");
+        a.textContent = completeUrl;
+        return `${a.outerHTML}${unescapedMatches[4] || ""}`;
+      }
+
+      return matches[0];
+    });
+  }
+
+  return html;
 }
 
 export function addParagraphClasses(elements, document) {
@@ -215,7 +253,7 @@ export function addParagraphClasses(elements, document) {
     }
 
     let html = el.innerHTML;
-    html = html.replace(/(\!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
+    html = html.replace(/(!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
       let classes = ["link", matches[1] ? "image" : ""]
         .filter((v) => !!v)
         .join(" ");
@@ -224,7 +262,7 @@ export function addParagraphClasses(elements, document) {
 
     // previous way:
     html = el.textContent
-      .split(/(`+[^\`]+?`+)/g)
+      .split(/(`+[^`]+?`+)/g)
       .map(inlineMarkdown)
       .join("");
     // previous way
@@ -241,7 +279,7 @@ export function addParagraphClasses(elements, document) {
         if (
           ev.metaKey ||
           ev.altKey ||
-          /^http[s]*\:\/\//i.test(el.getAttribute("href"))
+          /^http[s]*:\/\//i.test(el.getAttribute("href"))
         ) {
           // open in new tab
           window.open(el.href, "_blank");
@@ -250,6 +288,10 @@ export function addParagraphClasses(elements, document) {
         }
       });
     });
+
+    if (el.textContent.trim() === '') {
+      el.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
+    }
   });
   return;
 }
