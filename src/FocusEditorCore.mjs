@@ -89,7 +89,7 @@ class FocusEditorCore {
    * Replaces the current text with new text
    * @param {string} text
    */
-  replaceText(text, { clearHistory = false } = {}) {
+  replaceText(text, { clearHistory = false, dontAddToHistory = false } = {}) {
     // TODO: not sure that this rule is a good idea? But often empty text is set as \n…
     if (text === "\n") {
       text = "";
@@ -102,7 +102,8 @@ class FocusEditorCore {
     this.target.click();
     if (clearHistory) {
       this.#textUndo.clear();
-    } else {
+    }
+    if (!dontAddToHistory) {
       this.#textUndo.add(this.getMarkdown());
     }
   }
@@ -763,37 +764,20 @@ class FocusEditorCore {
 
   #undoStep(event) {
     event.preventDefault();
-    let undo = this.#textUndo.undo();
-    if (!undo) {
+    const { text, additionalData } = this.#textUndo.undo();
+    if (text === undefined) {
       return;
     }
 
-    this.replaceText(undo.text);
+    this.replaceText(text, { dontAddToHistory: true });
     this.#dispatchInputEvent();
-    // restore caret
-    const { currentParagraphCaret, currentParagraphIndex } =
-      undo.additionalData;
-    if (
-      currentParagraphCaret !== undefined &&
-      currentParagraphIndex !== undefined
-    ) {
-      setTimeout(() => {
-        let currentParagraph = this.target.children[currentParagraphIndex];
-
-        if (currentParagraph) {
-          Cursor.setCurrentCursorPosition(
-            currentParagraphCaret,
-            currentParagraph,
-          );
-        } else {
-          currentParagraph = this.target.children[this.target.children.length];
-        }
-        Cursor.setCurrentCursorPosition(
-          currentParagraphCaret,
-          currentParagraph,
-        );
-      }, 1);
-    }
+    setTimeout(() => {
+      // restore caret
+      Cursor.setCurrentCursorPosition(
+        additionalData.caretPosition,
+        this.target,
+      );
+    }, 1);
   }
 
   #addUndoStep(currentParagraph) {
@@ -802,11 +786,7 @@ class FocusEditorCore {
       this.getMarkdown(),
       currentParagraph?.parentNode
         ? {
-            currentParagraphCaret:
-              Cursor.getCurrentCursorPosition(currentParagraph),
-            currentParagraphIndex: Array.from(
-              currentParagraph.parentNode.children,
-            ).indexOf(currentParagraph),
+            caretPosition: Cursor.getCurrentCursorPosition(this.target),
           }
         : {},
     );
@@ -818,7 +798,7 @@ class FocusEditorCore {
     if (!redo) {
       return;
     }
-    this.replaceText(redo.text);
+    this.replaceText(redo.text, { dontAddToHistory: true });
     this.#dispatchInputEvent();
     // restore caret
     const { currentParagraphCaret, currentParagraphIndex } =

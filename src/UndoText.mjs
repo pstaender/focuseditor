@@ -49,7 +49,7 @@ export default class UndoText {
 
   undo() {
     if (!this.#undos[this.#position] || !this.#undos[this.#position - 1]) {
-      return null;
+      return {};
     }
 
     this.#position--;
