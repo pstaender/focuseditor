@@ -122,6 +122,7 @@ window.addEventListener("keydown", (ev) => {
     "https://raw.githubusercontent.com/mlschmitt/classic-books-markdown/refs/heads/main/H.P.%20Lovecraft/The%20Call%20of%20Cthulhu.md",
     "https://raw.githubusercontent.com/mlschmitt/classic-books-markdown/refs/heads/main/Edgar%20Allan%20Poe/The%20Murders%20in%20the%20Rue%20Morgue.md",
     "https://raw.githubusercontent.com/brilliantorg/sherlock/refs/heads/master/novels/028_Hound_of_theBaskervilles.txt",
+    "/specs/example.md",
   ];
   if (ev.ctrlKey && ev.altKey && ev.shiftKey && /^Digit\d+$/.test(ev.code)) {
     // load txt from

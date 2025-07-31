@@ -9,7 +9,8 @@
 import * as helper from "./helper.mjs";
 
 export const EMPTY_LINE_HTML_PLACEHOLDER = `<br>`;
-const HTTP_HTTPS_URL_REGEX = /(https?:\/\/)(www\.)?([-a-zA-Z0-9@:%._+~#=/;?&]{1,256})(.{0,1})/;
+const HTTP_HTTPS_URL_REGEX =
+  /(https?:\/\/)(www\.)?([-a-zA-Z0-9@:%._+~#=/;?&]{1,256})(.{0,1})/;
 
 export function innerTextToHtml(text, document) {
   text = text.replace(/\r/g, "\n");
@@ -111,23 +112,32 @@ function inlineMarkdown(text) {
 
   let html = helper.escapeHTMLEntities(text);
 
+  const transformUrlsToLinks = false; /* buggy */
+
   // find bold+italic
-  html = html.replace(/([*\\]*)(\*{3}[^\s]+.*?\*{3})([*]*)/g, (...matches) => {
-    if (matches[1] || matches[3]) {
-      return matches[0];
-    }
-    return `<strong><em>${matches[2]}</em></strong>`;
-  });
+  html = html
+    .replace(/([*\\]*)(\*{3}[^\s*]+.*?\*{3})([*]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<strong><em>${matches[2]}</em></strong>`;
+    })
+    .replace(/([_\\]*)(_{3}[^\s_]+.*?_{3})([_]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<strong><em>${matches[2]}</em></strong>`;
+    });
 
   // find *italic* / _italic_
   html = html
-    .replace(/([*\\]*)(\*{1}[^\s]+.*?\*{1})([*]*)/g, (...matches) => {
+    .replace(/([*\\]*)(\*{1}[^\s*]+.*?\*{1})([*]*)/g, (...matches) => {
       if (matches[1] || matches[3]) {
         return matches[0];
       }
       return `<em>${matches[2]}</em>`;
     })
-    .replace(/([_\\]*)(_{1}[^\s]+.*?_{1})([_]*)/g, (...matches) => {
+    .replace(/([_\\]*)(_{1}[^\s_]+.*?_{1})([_]*)/g, (...matches) => {
       if (matches[1] || matches[3]) {
         return matches[0];
       }
@@ -136,13 +146,13 @@ function inlineMarkdown(text) {
 
   // find **bold text** / __bold text__
   html = html
-    .replace(/([*\\]*)(\*\*[^\s]+.*?\*\*)([*\\]*)/g, (...matches) => {
+    .replace(/([*\\]*)(\*\*[^\s*]+.*?\*\*)([*\\]*)/g, (...matches) => {
       if (matches[1] || matches[3]) {
         return matches[0];
       }
       return `<strong>${matches[2]}</strong>`;
     })
-    .replace(/([_\\]*)(__[^\s]+.*?__)([_\\]*)/g, (...matches) => {
+    .replace(/([_\\]*)(__[^\s_]+.*?__)([_\\]*)/g, (...matches) => {
       if (matches[1] || matches[3]) {
         return matches[0];
       }
@@ -158,7 +168,7 @@ function inlineMarkdown(text) {
   });
 
   // find links
-  html = html.replace(/(\!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
+  html = html.replace(/(!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
     let classes = ["link", matches[1] ? "image" : ""]
       .filter((v) => !!v)
       .join(" ");
@@ -166,18 +176,31 @@ function inlineMarkdown(text) {
     return `<a href="${url}" style="--url: url(${url})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${url})</span></a>`;
   });
 
-  html = html.replace(HTTP_HTTPS_URL_REGEX, (...matches) => {
+  if (transformUrlsToLinks) {
+    html = html.replace(HTTP_HTTPS_URL_REGEX, (...matches) => {
+      let url = helper.htmlToText(
+        matches[1] + (matches[2] || "") + (matches[3] || ""),
+      );
+      if (matches[4] && matches[4].trim() !== "") {
+        // no action
+        return matches[0];
+      }
+      let unescapedMatches = url.match(HTTP_HTTPS_URL_REGEX);
+      if (unescapedMatches) {
+        let completeUrl =
+          unescapedMatches[1] +
+          (unescapedMatches[2] || "") +
+          (unescapedMatches[3] + "");
+        let a = document.createElement("A");
+        a.href = completeUrl;
+        a.classList.add("link", "inline");
+        a.innerText = completeUrl;
+        return `${a.outerHTML}${unescapedMatches[4] || ""}`;
+      }
 
-    if (matches[4] && matches[4].trim() !== '') {
-      // no action
       return matches[0];
-    }
-    console.log(matches);
-
-    const url = matches[1] + (matches[2] || '') + (matches[3] || '');
-    // return matches[0];
-    return `<a href="${encodeURI(url)}" class="link">${url}</a>${matches[4] || ''}`;
-  });
+    });
+  }
 
   return html;
 }

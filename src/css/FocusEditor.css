@@ -85,7 +85,7 @@ focus-editor {
       white-space: pre-wrap;
       word-wrap: break-word;
     }
-    .block:not(.code-block):not(.blockquote) {
+    .block:not(.code-block) {
       transition:
         opacity var(--transition-duration),
         color var(--transition-duration),
@@ -170,7 +170,6 @@ focus-editor {
       );
     }
     .blockquote {
-      background-color: var(--color-grey-very-light);
       margin-bottom: 0;
       transform: translateX(
         calc(var(--margin-left-factor) * var(--space-left) + 2rem)
@@ -202,18 +201,10 @@ focus-editor {
     .blockquote:first-child,
     :not(.blockquote) + .blockquote {
       padding-top: 0.25rem;
-      &:before {
-        border-top-left-radius: var(--border-radius);
-      }
-      border-top-right-radius: var(--border-radius);
     }
     .blockquote:has(+ *:not(.blockquote)),
     .blockquote:last-child {
       padding-bottom: 0.25rem;
-      &:before {
-        border-bottom-left-radius: var(--border-radius);
-      }
-      border-bottom-right-radius: var(--border-radius);
     }
     .hr {
       position: relative;
@@ -240,6 +231,9 @@ focus-editor {
       text-decoration: none;
       transition: text-decoration 0.2s, font-weight 0.2s;
       display: inline-block;
+      &.inline {
+        display: inline;
+      }
       span {
         color: var(--color-grey-lighter);
       }
@@ -419,7 +413,7 @@ focus-editor.highlight-current-paragraph {
       box-shadow 0.1s,
       transform var(--transition-duration);
   }
-  .block:not(.code-block):not(.blockquote) {
+  .block:not(.code-block) {
     &:focus,
     &.with-caret {
       background-color: var(--color-grey-light);
