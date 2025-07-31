@@ -26,9 +26,9 @@ it("#innerTextToHtml", ({ expect }) => {
 
   expect(trws(md2html.innerTextToHtml(`\n# Headline\n`, document))).toBe(
     trws(`
-    <div class="block">&nbsp;</div>
+    <div class="block"><br></div>
     <div># Headline</div>
-    <div class="block">&nbsp;</div>`),
+    <div class="block"><br></div>`),
   );
 });
 
@@ -69,11 +69,11 @@ it("#addParagraphClasses", ({ expect }) => {
   expect([...elements].map((element) => element.outerHTML).join(`\n`)).toBe(
     trws(`
       <div class="block h2" id="very-important-headline">## Very <em>*important*</em> Headline</div>
-      <div class="block"></div>
+      <div class="block"><br></div>
       <div class="block"><a href="https://example.com/_wiki_" style="--url: url(https://example.com/_wiki_)" class="link image">![<strong>**important**</strong> link]<span>(https://example.com/_wiki_)</span></a></div>
-      <div class="block"></div>
+      <div class="block"><br></div>
       <div class="block">Some <strong>**text**</strong> with <em>*some*</em> different styles.</div>
-      <div class="block"></div>
+      <div class="block"><br></div>
       <div class="block code-block-start code-block">\`\`\`md</div>
       <div class="block code-block">#&nbsp;test</div>
       <div class="block code-block">**bold**</div>
