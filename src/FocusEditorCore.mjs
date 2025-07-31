@@ -30,7 +30,7 @@ class FocusEditorCore {
       },
     },
     focus: {
-      handler: (ev) => {
+      handler: () => {
         if (this.target.parentElement.hasAttribute("focus")) {
           this.target.parentElement.removeAttribute("focus");
         } else {
@@ -40,7 +40,7 @@ class FocusEditorCore {
       accessKey: "KeyX",
     },
     images: {
-      handler: (ev) => {
+      handler: () => {
         if (this.target.parentElement.hasAttribute("image-preview")) {
           this.target.parentElement.removeAttribute("image-preview");
         } else {
@@ -181,11 +181,11 @@ class FocusEditorCore {
     this.target.contentEditable = true;
     this.target.setAttribute("role", "textbox");
     this.target.setAttribute("aria-multiline", "true");
-    this.target.addEventListener("keyup", (ev) => this.#onKeyUp(ev, this));
-    this.target.addEventListener("keydown", (ev) => this.#onKeyDown(ev, this));
-    this.target.addEventListener("click", (ev) => this.#onClick(ev, this));
-    this.target.addEventListener("paste", (ev) => this.#onPaste(ev, this));
-    this.target.addEventListener("copy", (ev) => this.#onCopy(ev, this));
+    this.target.addEventListener("keyup", (ev) => this.#onKeyUp(ev));
+    this.target.addEventListener("keydown", (ev) => this.#onKeyDown(ev));
+    this.target.addEventListener("click", (ev) => this.#onClick(ev));
+    this.target.addEventListener("paste", (ev) => this.#onPaste(ev));
+    this.target.addEventListener("copy", (ev) => this.#onCopy(ev));
     this.target.parentElement.addEventListener("scroll", (ev) =>
       this.#onScroll(ev, this),
     );
@@ -358,7 +358,7 @@ class FocusEditorCore {
 
     if (event.shiftKey) {
       current.innerHTML = current.innerHTML.replace(
-        new RegExp(`^(&nbsp;|\s){1,${this.#tabSize}}`),
+        new RegExp(`^(&nbsp;| ){1,${this.#tabSize}}`),
         "",
       );
       this.#restoreLastCaretPosition(helper.currentBlockWithCaret(), {
@@ -430,7 +430,7 @@ class FocusEditorCore {
     }
   }
 
-  #onScroll(event, editor) {
+  #onScroll() {
     this.#updateAllVisibleElements();
   }
 
@@ -438,8 +438,8 @@ class FocusEditorCore {
     return this.#maxUndoSteps && this.#maxUndoSteps > 0;
   }
 
-  #onKeyDown(event, editor) {
-    editor.#debugLog("onKeyDown", event.key);
+  #onKeyDown(event) {
+    this.#debugLog("onKeyDown", event.key);
 
     this.#checkPlaceholder();
     this.#addCssClassToBlockWithCaret();
@@ -492,8 +492,8 @@ class FocusEditorCore {
     }
   }
 
-  #onKeyUp(event, editor) {
-    editor.#debugLog("onKeyUp", event.key);
+  #onKeyUp(event) {
+    this.#debugLog("onKeyUp", event.key);
 
     if (event.isComposing) {
       return;
@@ -532,9 +532,10 @@ class FocusEditorCore {
 
     if (helper.isFirefox() && !this.target.querySelector(".block")) {
       /* Firefox Bug (1): When selecting all text and clean it, not div is there anymore */
+      /* eslint-disable no-unused-vars */
       try {
         Cursor.setCurrentCursorPosition(0, this.target.querySelector(".block"));
-      } catch (error) {
+      } catch (_) {
         this.refresh();
         return;
       }
@@ -685,7 +686,7 @@ class FocusEditorCore {
     const previousText = previousElement.innerText;
 
     const lineBeginsWithUnorderedList =
-      /^(\s*-\s+|\s*\*\s+|\s*•\s+|\s*\*\s+|\s*\+\s+|\>+\s*)(.*)$/;
+      /^(\s*-\s+|\s*\*\s+|\s*•\s+|\s*\*\s+|\s*\+\s+|>+\s*)(.*)$/;
     const lineBeginsWithOrderedList = /^(\s*)(\d+)(\.|\.\)|\))\s.+/;
 
     let matches = previousText.match(lineBeginsWithUnorderedList);
@@ -739,7 +740,7 @@ class FocusEditorCore {
 
   #undoStep(event) {
     event.preventDefault();
-    const { text, additionalData } = this.#textUndo.undo();
+    const { text } = this.#textUndo.undo();
     if (text === undefined) {
       return;
     }

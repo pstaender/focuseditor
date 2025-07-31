@@ -253,7 +253,7 @@ export function addParagraphClasses(elements, document) {
     }
 
     let html = el.innerHTML;
-    html = html.replace(/(\!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
+    html = html.replace(/(!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
       let classes = ["link", matches[1] ? "image" : ""]
         .filter((v) => !!v)
         .join(" ");
@@ -262,7 +262,7 @@ export function addParagraphClasses(elements, document) {
 
     // previous way:
     html = el.textContent
-      .split(/(`+[^\`]+?`+)/g)
+      .split(/(`+[^`]+?`+)/g)
       .map(inlineMarkdown)
       .join("");
     // previous way
@@ -279,7 +279,7 @@ export function addParagraphClasses(elements, document) {
         if (
           ev.metaKey ||
           ev.altKey ||
-          /^http[s]*\:\/\//i.test(el.getAttribute("href"))
+          /^http[s]*:\/\//i.test(el.getAttribute("href"))
         ) {
           // open in new tab
           window.open(el.href, "_blank");

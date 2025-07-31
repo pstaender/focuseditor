@@ -27,8 +27,6 @@ export function currentElementWithCaret() {
     return el;
   }
 
-  var sel = window.getSelection();
-  var range = sel.getRangeAt(0);
   return range.startContainer.parentNode;
 }
 
