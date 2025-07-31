@@ -408,26 +408,20 @@ focus-editor[image-preview] {
     }
   }
 }
-focus-editor.highlight-current-paragraph {
+
+focus-editor.highlight-current-paragraph .focus-editor {
   .block {
+    opacity: 0.3;
     transition:
-      opacity var(--transition-duration),
+      opacity 0.2s,
       color var(--transition-duration),
-      box-shadow 0.1s,
       transform var(--transition-duration);
   }
-  .block:not(.code-block) {
-    &:focus,
-    &.with-caret {
-      background-color: var(--color-grey-light);
-    }
+  .block.with-caret {
+    opacity: 1;
   }
-  .code-block.with-caret,
-  .code-block.with-caret ~ .code-block,
-  .code-block ~ .code-block.with-caret,
-  .code-block:has(~ .code-block.with-caret) {
-    background-color: light-dark(#ddd, #444);
-
+  .code-block:not(.with-caret) {
+    background: none;
     &:after {
       display: none;
     }

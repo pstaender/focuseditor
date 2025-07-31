@@ -1,4 +1,5 @@
-import { init } from "./src/FocusEditor.mjs?v0.0.2a";
+import { init } from "./src/FocusEditor.mjs?{{LAST_GIT_COMMIT_HASH}}";
+import Cursor from "./src/Cursor.mjs?{{LAST_GIT_COMMIT_HASH}}";
 
 init();
 
@@ -122,7 +123,7 @@ window.addEventListener("keydown", (ev) => {
     "https://raw.githubusercontent.com/mlschmitt/classic-books-markdown/refs/heads/main/H.P.%20Lovecraft/The%20Call%20of%20Cthulhu.md",
     "https://raw.githubusercontent.com/mlschmitt/classic-books-markdown/refs/heads/main/Edgar%20Allan%20Poe/The%20Murders%20in%20the%20Rue%20Morgue.md",
     "https://raw.githubusercontent.com/brilliantorg/sherlock/refs/heads/master/novels/028_Hound_of_theBaskervilles.txt",
-    "/specs/example.md",
+    "./specs/example.md",
   ];
   if (ev.ctrlKey && ev.altKey && ev.shiftKey && /^Digit\d+$/.test(ev.code)) {
     // load txt from
@@ -141,6 +142,11 @@ window.addEventListener("keydown", (ev) => {
     ev.preventDefault();
     window.save();
   }
+});
+
+focusEditor.addEventListener("keyup", () => {
+  let caret = Cursor.getCurrentCursorPosition(focusEditor);
+  localStorage.setItem(`${localStorageKey}-caret-position`, caret);
 });
 
 window.save = function () {
@@ -219,3 +225,11 @@ document.getElementById("filename").addEventListener('change', () => {
 })
 
 document.getElementById("filename").dispatchEvent(new Event("change"));
+
+if (localStorage.getItem(`${localStorageKey}-caret-position`)) {
+  // restore caret position
+  Cursor.setCurrentCursorPosition(
+    localStorage.getItem(`${localStorageKey}-caret-position`),
+    focusEditor
+  );
+}

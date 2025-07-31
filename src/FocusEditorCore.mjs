@@ -670,11 +670,10 @@ class FocusEditorCore {
 
     const setCursorToNewPositionAndUpdate = () => {
       if (!current) current = helper.currentBlockWithCaret();
-
       this.#updateAllVisibleElements();
       Cursor.setCurrentCursorPosition(
         textIsSplitAt > 0
-          ? current.dataset.autocompletePattern.length
+          ? current.dataset.autocompletePattern?.length
           : current.innerText.length,
         current,
       );
@@ -728,8 +727,8 @@ class FocusEditorCore {
           return;
         }
         current.dataset.autocompletePattern = autocompleteText;
-        setCursorToNewPositionAndUpdate();
       }
+      setCursorToNewPositionAndUpdate();
     }
     delete previousElement.dataset.autocompletePattern;
   }
@@ -745,7 +744,8 @@ class FocusEditorCore {
       return;
     }
 
-    let caretPosition = this.#textUndo.previous()?.additionalData?.caretPosition;
+    let caretPosition =
+      this.#textUndo.previous()?.additionalData?.caretPosition;
 
     this.replaceText(text, { dontAddToHistory: true });
     this.#dispatchInputEvent();
@@ -754,10 +754,7 @@ class FocusEditorCore {
       if (caretPosition === undefined) {
         return;
       }
-      Cursor.setCurrentCursorPosition(
-        caretPosition,
-        this.target,
-      );
+      Cursor.setCurrentCursorPosition(caretPosition, this.target);
     }, 10);
   }
 
