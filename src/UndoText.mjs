@@ -13,12 +13,16 @@ export default class UndoText {
     if (text === this.#previousText || text === this.#currentText) {
       return;
     }
-    if (this.#position < this.#undos.length - 1) {
-      // cut off
-      this.#undos = this.#undos.splice(0, this.#position + 2);
+    const cutOff = this.#position < this.#undos.length - 1;
+    let previousText = this.previous() ? this.previous().text : this.#previousText;
+    if (cutOff) {
+      // console.log(this.#position < this.#undos.length - 1, this.#previousText);
+      this.#undos = this.#undos.splice(0, this.#position + 1);
+      previousText = this.#currentText;
+      // console.log('Cut off', this.#undos, { text, previousText })
     }
-    if (this.previous()) {
-      let previousText = this.previous().text === null ? this.#previousText : this.previous().text;
+
+    if (previousText) {
       let diff = difflib.ndiff(previousText.split(this.SEPARATOR), text.split(this.SEPARATOR));
       if (this.#undos[this.#position]) {
         this.#undos[this.#position].text = null;
@@ -36,6 +40,8 @@ export default class UndoText {
         diff: {}
       });
     }
+
+
     this.#previousText = text;
     this.#position++;
     return this;

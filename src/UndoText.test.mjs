@@ -21,10 +21,12 @@ it("undos and adds steps", ({ expect }) => {
     .add("3rd")
     .add("4th")
     .add("5th");
+  expect(undo.undos.length).toBe(5);
   expect(undo.undo().text).toBe("4th");
   expect(undo.undo().text).toBe("3rd");
   expect(undo.undos.length).toBe(5);
   undo.add("6th");
+  expect(undo.undos.length).toBe(4);
   expect(undo.undo().text).toBe("3rd");
   undo.add("7th");
   undo.add("8th");
