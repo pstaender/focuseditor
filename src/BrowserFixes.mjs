@@ -6,7 +6,7 @@ export default class BrowserFixes {
     target.addEventListener("keyup", (ev) => {
       if (
         helper.currentBlockWithCaret() === null &&
-        target.innerText === "" &&
+        target.innerContent === "" &&
         target.allChildren === undefined
       ) {
         target.innerHTML = '<div class="block"></div>';

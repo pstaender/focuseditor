@@ -70,7 +70,7 @@ export function isTouchDevice() {
 }
 
 export function whiteSpaceWorkaround() {
-  return isFirefox() ? "<br>" : "";
+  return "<br>";
 }
 
 /*

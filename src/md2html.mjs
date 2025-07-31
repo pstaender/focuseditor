@@ -20,7 +20,7 @@ export function innerTextToHtml(text, document) {
     l = l.replace(/\s+$/, "");
 
     if (l.trim() === "") {
-      return `<div class="block">&nbsp;</div>`;
+      return `<div class="block">${EMPTY_LINE_HTML_PLACEHOLDER}</div>`;
     }
     const el = document.createElement("div");
     el.textContent = l;
@@ -49,6 +49,7 @@ export function addCodeBlockClasses(elements, document) {
       if (isCodeBlock) {
         div.classList.add("code-block");
       }
+      div.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
       el.replaceWith(div);
       return;
     }
@@ -60,7 +61,7 @@ export function addCodeBlockClasses(elements, document) {
     const l = el.textContent;
 
     if (l.trim() === "") {
-      el.innerHTML = helper.whiteSpaceWorkaround();
+      el.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
     }
 
     if (
@@ -87,7 +88,7 @@ export function addCodeBlockClasses(elements, document) {
         el.classList.add("code-block");
         if (el.innerHTML.match(/[<>]/)) {
           // remove html tags
-          el.textContent = el.innerText;
+          el.textContent = String(el.textContent);
         }
         codeBlocks.push(el);
       }
@@ -172,7 +173,7 @@ function inlineMarkdown(text) {
     let classes = ["link", matches[1] ? "image" : ""]
       .filter((v) => !!v)
       .join(" ");
-    let url = helper.stripHtml(matches[3]);
+    let url = helper.stripHtml(matches[3].split(/\s+/)[0]);
     return `<a href="${url}" style="--url: url(${url})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${url})</span></a>`;
   });
 
@@ -194,7 +195,7 @@ function inlineMarkdown(text) {
         let a = document.createElement("A");
         a.href = completeUrl;
         a.classList.add("link", "inline");
-        a.innerText = completeUrl;
+        a.textContent = completeUrl;
         return `${a.outerHTML}${unescapedMatches[4] || ""}`;
       }
 
@@ -287,6 +288,10 @@ export function addParagraphClasses(elements, document) {
         }
       });
     });
+
+    if (el.textContent.trim() === '') {
+      el.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
+    }
   });
   return;
 }

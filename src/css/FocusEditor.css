@@ -229,24 +229,26 @@ focus-editor {
       --default-color: currentColor;
       color: currentColor;
       text-decoration: none;
-      transition: text-decoration 0.2s, font-weight 0.2s;
-      display: inline-block;
-      &.inline {
-        display: inline;
-      }
+      display: inline;
+      transition: color 0.1s;
       span {
         color: var(--color-grey-lighter);
+        transition: color 0.1s;
       }
 
       @media (hover) {
         &:hover {
           text-decoration: underline;
-          font-weight: bold;
           span {
-            font-weight: 500;
             color: var(--default-color);
           }
         }
+      }
+    }
+    .with-caret .link {
+      text-decoration: underline;
+      span {
+        color: var(--default-color);
       }
     }
   }
@@ -370,6 +372,7 @@ focus-editor {
 focus-editor[image-preview] {
   .link.image {
     span {
+      /* display: inline-block; */
       &:after {
         --transition-duration: 0.7s;
         content: "";
@@ -381,10 +384,10 @@ focus-editor[image-preview] {
           transform var(--transition-duration);
         transform: translateY(0.2rem);
         background: var(--url);
-        display: inline-block;
         background-size: cover;
         background-position: center;
         position: relative;
+        display: inline-block;
       }
     }
   }

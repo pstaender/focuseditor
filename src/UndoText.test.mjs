@@ -11,7 +11,7 @@ it("undos several steps", ({ expect }) => {
   expect(undo.undo().text).toBe("Hallo!\nHallo Welt?");
   expect(undo.undo().text).toBe("Hallo!\nHallo Welt");
   expect(undo.undo().text).toBe("Hallo!");
-  expect(undo.undo()).toBe(null);
+  expect(undo.undo()).toStrictEqual({});
 });
 
 it("undos and adds steps", ({ expect }) => {

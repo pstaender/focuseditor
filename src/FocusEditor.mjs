@@ -62,7 +62,7 @@ export function textareasAsFocusEditor(selector = "textarea") {
   registerFocusEditorWebComponent();
   document.querySelectorAll(selector).forEach((textarea) => {
     const fe = new FocusEditorWebComponent();
-    fe.value = textarea.value || textarea.innerText;
+    fe.value = textarea.value || textarea.innerContent;
     for (let attr of [...textarea.attributes]) {
       fe.setAttribute(attr.name, textarea.getAttribute(attr.name));
     }

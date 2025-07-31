@@ -126,11 +126,11 @@ class FocusEditorCore {
    */
   refresh() {
     let cursor = Cursor.getCurrentCursorPosition(this.target);
-    const lengthBefore = this.target.innerText.length;
+    const lengthBefore = this.target.textContent.length;
 
     this.replaceText(this.getMarkdown());
 
-    const diffCursorPosition = lengthBefore - this.target.innerText.length;
+    const diffCursorPosition = lengthBefore - this.target.textContent.length;
 
     if (cursor === 0) {
       // Firefox issue
@@ -150,22 +150,22 @@ class FocusEditorCore {
    */
   getMarkdown() {
     let text = [];
-    if (!this.target.querySelector(".block") && this.target.innerText) {
+    if (!this.target.querySelector(".block") && this.target.textContent) {
       // firefox bug
       if (!helper.isFirefox()) {
         console.error("No .block element found");
       }
-      return this.target.innerText;
+      return this.target.textContent;
     }
     this.target
       .querySelectorAll(".block")
-      .forEach((el) => text.push(String(el.innerText).replace(/\n+$/, "")));
+      .forEach((el) => text.push(String(el.textContent).replace(/\n+$/, "")));
 
     text = text.join("\n");
 
     // sometimes a browser (firefox) screws up blocks. user inner text instead
-    return text.trim() === "" && this.target.innerText
-      ? this.target.innerText
+    return text.trim() === "" && this.target.textContent
+      ? this.target.textContent
       : text;
   }
 
@@ -179,6 +179,8 @@ class FocusEditorCore {
 
     this.target.classList.add("focus-editor");
     this.target.contentEditable = true;
+    this.target.setAttribute("role", "textbox");
+    this.target.setAttribute("aria-multiline", "true");
     this.target.addEventListener("keyup", (ev) => this.#onKeyUp(ev, this));
     this.target.addEventListener("keydown", (ev) => this.#onKeyDown(ev, this));
     this.target.addEventListener("click", (ev) => this.#onClick(ev, this));
@@ -395,24 +397,8 @@ class FocusEditorCore {
 
   #onCopy(event) {
     event.preventDefault();
-    /**
-     * Inserts a temp. placeholder for an empty block
-     */
-    [...this.target.children].forEach((el) => {
-      if (el.textContent.trim() === "") {
-        el.dataset.emptyBlockFilledWithPlaceholder = el.textContent;
-        el.innerHTML = "<br>";
-      }
-    });
     const selection = document.getSelection();
-    const copiedText = selection.toString();
-    this.target
-      .querySelectorAll("[data-empty-block-filled-with-placeholder]")
-      .forEach((el) => {
-        el.textContent = el.dataset.emptyBlockFilledWithPlaceholder;
-        //remove dataset attribute
-        delete el.dataset.emptyBlockFilledWithPlaceholder;
-      });
+    const copiedText = selection.toString().replace(/\xA0/g, " ");
     event.clipboardData.setData("text/plain", copiedText);
   }
 
@@ -556,17 +542,6 @@ class FocusEditorCore {
 
     if (
       helper.isFirefox() &&
-      currentParagraph &&
-      currentParagraph.innerText.trim() === "" &&
-      event.key === " "
-    ) {
-      // TODO: prevent firefox deleting the spaces
-      // console.log(event, currentParagraph.innerText)
-      // return;
-    }
-
-    if (
-      helper.isFirefox() &&
       this.target.innerText.trim() !== "" &&
       this.target.querySelectorAll(".block").length === 1 &&
       this.target.querySelector(".block").innerText.trim() === ""
@@ -626,7 +601,7 @@ class FocusEditorCore {
           this.#storeLastCaretPosition();
           this.#updateAllVisibleElements();
           this.#restoreLastCaretPosition();
-        }, 350);
+        }, 200);
         this.__renderMarkdownToHtmlDebounced();
         return;
       }
@@ -769,15 +744,20 @@ class FocusEditorCore {
       return;
     }
 
+    let caretPosition = this.#textUndo.previous()?.additionalData?.caretPosition;
+
     this.replaceText(text, { dontAddToHistory: true });
     this.#dispatchInputEvent();
     setTimeout(() => {
       // restore caret
+      if (caretPosition === undefined) {
+        return;
+      }
       Cursor.setCurrentCursorPosition(
-        additionalData.caretPosition,
+        caretPosition,
         this.target,
       );
-    }, 1);
+    }, 10);
   }
 
   #addUndoStep(currentParagraph) {
@@ -794,27 +774,19 @@ class FocusEditorCore {
 
   #redoStep(event) {
     event.preventDefault();
-    let redo = this.#textUndo.redo();
-    if (!redo) {
+    const { text, additionalData } = this.#textUndo.redo();
+    if (text === undefined) {
       return;
     }
-    this.replaceText(redo.text, { dontAddToHistory: true });
+    this.replaceText(text, { dontAddToHistory: true });
     this.#dispatchInputEvent();
-    // restore caret
-    const { currentParagraphCaret, currentParagraphIndex } =
-      redo.additionalData;
-    if (
-      currentParagraphCaret !== undefined &&
-      currentParagraphIndex !== undefined
-    ) {
-      const currentParagraph = this.target.children[currentParagraphIndex];
-      if (currentParagraph) {
-        Cursor.setCurrentCursorPosition(
-          currentParagraphCaret,
-          currentParagraph,
-        );
-      }
-    }
+    setTimeout(() => {
+      // restore caret
+      Cursor.setCurrentCursorPosition(
+        additionalData.caretPosition,
+        this.target,
+      );
+    }, 10);
   }
 
   /**
