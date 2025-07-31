@@ -1,6 +1,6 @@
 {
   "name": "browser-focus-editor",
-  "version": "0.0.4",
+  "version": "1.0.0",
   "description": "focus editor for the focused editor",
   "license": "AGPL-3.0-only",
   "author": "Philipp Staender <pstaender@mailbox.org>",
