@@ -54,9 +54,7 @@ window.initFocusEditor();
 
 ### Todos
 
-- [ ] complete docs
-- [ ] specs
-- [ ] real undos
+- [ ] better docs
 
 ### License
 
