@@ -238,7 +238,7 @@ focus-editor {
       --default-color: currentColor;
       color: currentColor;
       text-decoration: none;
-      transition: text-decoration var(--transition-duration);
+      transition: text-decoration 0.2s, font-weight 0.2s;
       display: inline-block;
       span {
         color: var(--color-grey-lighter);

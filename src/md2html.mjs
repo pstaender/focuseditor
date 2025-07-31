@@ -9,6 +9,7 @@
 import * as helper from "./helper.mjs";
 
 export const EMPTY_LINE_HTML_PLACEHOLDER = `<br>`;
+const HTTP_HTTPS_URL_REGEX = /(https?:\/\/)(www\.)?([-a-zA-Z0-9@:%._+~#=/;?&]{1,256})(.{0,1})/;
 
 export function innerTextToHtml(text, document) {
   text = text.replace(/\r/g, "\n");
@@ -163,6 +164,19 @@ function inlineMarkdown(text) {
       .join(" ");
     let url = helper.stripHtml(matches[3]);
     return `<a href="${url}" style="--url: url(${url})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${url})</span></a>`;
+  });
+
+  html = html.replace(HTTP_HTTPS_URL_REGEX, (...matches) => {
+
+    if (matches[4] && matches[4].trim() !== '') {
+      // no action
+      return matches[0];
+    }
+    console.log(matches);
+
+    const url = matches[1] + (matches[2] || '') + (matches[3] || '');
+    // return matches[0];
+    return `<a href="${encodeURI(url)}" class="link">${url}</a>${matches[4] || ''}`;
   });
 
   return html;
