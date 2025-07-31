@@ -91,8 +91,8 @@ class FocusEditorCore {
    */
   replaceText(text, { clearHistory = false } = {}) {
     // TODO: not sure that this rule is a good idea? But often empty text is set as \n…
-    if (text === '\n') {
-      text = '';
+    if (text === "\n") {
+      text = "";
     }
     this.target.innerHTML = md2html.innerTextToHtml(text, document);
     this.#updateChildrenElementsWithMarkdownClasses();
@@ -382,23 +382,41 @@ class FocusEditorCore {
       this.target
         .querySelectorAll(".block[data-placeholder]")
         .forEach((el) => delete el.dataset.placeholder);
-      if (this.target.textContent === "" && this.target.querySelectorAll(".block").length === 1) {
+      if (
+        this.target.textContent === "" &&
+        this.target.querySelectorAll(".block").length === 1
+      ) {
         this.target.querySelector(".block").dataset.placeholder =
           this.#placeholder;
       }
     }, 1);
-
   }
 
   #onCopy(event) {
     event.preventDefault();
+    /**
+     * Inserts a temp. placeholder for an empty block
+     */
+    [...this.target.children].forEach((el) => {
+      if (el.textContent.trim() === "") {
+        el.dataset.emptyBlockFilledWithPlaceholder = el.textContent;
+        el.innerHTML = "<br>";
+      }
+    });
     const selection = document.getSelection();
     const copiedText = selection.toString();
-    event.clipboardData.setData('text/plain', copiedText);
+    this.target
+      .querySelectorAll("[data-empty-block-filled-with-placeholder]")
+      .forEach((el) => {
+        el.textContent = el.dataset.emptyBlockFilledWithPlaceholder;
+        //remove dataset attribute
+        delete el.dataset.emptyBlockFilledWithPlaceholder;
+      });
+    event.clipboardData.setData("text/plain", copiedText);
   }
 
   #onPaste(event) {
-    let paste = (event.clipboardData || window.clipboardData).getData('text');
+    let paste = (event.clipboardData || window.clipboardData).getData("text");
 
     const selection = window.getSelection();
     if (!selection.rangeCount) return false;
@@ -466,7 +484,6 @@ class FocusEditorCore {
     this.#storeEditorCaretPosition();
 
     this.#textLengthOnKeyDown = this.target.innerText.length;
-
 
     if ((event.ctrlKey && event.altKey) || (event.altKey && event.shiftKey)) {
       for (let name in this.#keyboardShortcuts) {
@@ -567,7 +584,6 @@ class FocusEditorCore {
       if (helper.isFirefox()) {
         let divs = this.target.querySelectorAll("div:not(.block)");
         if (divs.length > 0) {
-          console.log(divs);
           divs.forEach((el) => el.classList.add("block"));
           divs[0].click();
           divs[0].focus();
@@ -635,6 +651,7 @@ class FocusEditorCore {
     const cursorPosition = Cursor.getCurrentCursorPosition(current);
 
     let previousElement = current.previousElementSibling;
+    let textIsSplitAt = 0;
 
     if (cursorPosition === 0) {
       current.before(div);
@@ -649,16 +666,19 @@ class FocusEditorCore {
         let text = current.innerText;
         current.innerText = text.substr(0, cursorPosition);
         div.innerText = text.substr(cursorPosition);
+        textIsSplitAt = cursorPosition;
       }
       current.after(div);
-      if (current.classList.contains("code-block") && !current.classList.contains("code-block-end")) {
+      if (
+        current.classList.contains("code-block") &&
+        !current.classList.contains("code-block-end")
+      ) {
         div.classList.add("code-block");
       }
       previousElement = current;
       Cursor.setCurrentCursorPosition(0, div);
       current = div;
     }
-
 
     if (!current) current = helper.currentBlockWithCaret();
     if (!current) return;
@@ -671,11 +691,16 @@ class FocusEditorCore {
       return;
     }
 
-    const setCursorToEndAndUpdate = () => {
+    const setCursorToNewPositionAndUpdate = () => {
       if (!current) current = helper.currentBlockWithCaret();
 
       this.#updateAllVisibleElements();
-      Cursor.setCurrentCursorPosition(current.innerText.length, current);
+      Cursor.setCurrentCursorPosition(
+        textIsSplitAt > 0
+          ? current.dataset.autocompletePattern.length
+          : current.innerText.length,
+        current,
+      );
     };
 
     const previousAutocompletePattern =
@@ -704,7 +729,7 @@ class FocusEditorCore {
         return;
       }
       current.dataset.autocompletePattern = matches[1];
-      setCursorToEndAndUpdate();
+      setCursorToNewPositionAndUpdate();
     } else {
       matches = previousText.match(lineBeginsWithOrderedList);
       if (matches && matches[2] && matches[3]) {
@@ -725,12 +750,11 @@ class FocusEditorCore {
           previousElement.innerText = "";
           return;
         }
-        setCursorToEndAndUpdate();
         current.dataset.autocompletePattern = autocompleteText;
-        // TODO: cleanup dataset.autocompletePattern afterwards
+        setCursorToNewPositionAndUpdate();
       }
     }
-    // this.#updateAllVisibleElements()
+    delete previousElement.dataset.autocompletePattern;
   }
 
   #dispatchInputEvent() {

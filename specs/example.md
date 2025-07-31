@@ -1,9 +1,16 @@
 ## … for the focused editor
 
 Use **bold**, *italic*, ***bold-italic*** or ~~strikethrough~~ text.
-Also `blockquotes` and `code` are supported.
-
 Or use __bold__, _italic_, ___bold-italic___ text.
+
+Use `inline-code` and
+
+```whatever-language-you-prefer
+multiline-code
+```
+
+> blockquotes are supported (includes **inline markdown**)
+
 
 <tags>are not supported</tags>
 
