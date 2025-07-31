@@ -17,7 +17,6 @@ const focusEditor = document.querySelector("focus-editor");
 if (window.location.hash === "#__force_new__") {
   window.localStorage.clear();
   window.newFile();
-  window.location.hash = "#__editor_reset_successful__";
 }
 
 window.newFile = () => {

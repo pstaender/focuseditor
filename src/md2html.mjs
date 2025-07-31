@@ -35,6 +35,11 @@ export function addCodeBlockClasses(elements, document) {
   let isCodeBlock = false;
   let codeBlocks = [];
 
+  const allCodeBlocksCount = [...elements].filter((l) =>
+    /^```/.test(l.textContent),
+  ).length;
+  let codeBlockIndex = 0;
+
   elements.forEach((el) => {
     if (el.tagName === "BR") {
       const div = document.createElement("div");
@@ -56,116 +61,111 @@ export function addCodeBlockClasses(elements, document) {
       el.innerHTML = helper.whiteSpaceWorkaround();
     }
 
-    if (l.match(/^```/) && !isCodeBlock) {
-      isCodeBlock = true;
-      el.classList.add("code-block-start");
-      codeBlocks = [];
-    } else if (l.match(/^```$/) && isCodeBlock) {
-      isCodeBlock = false;
-      el.classList.add("code-block");
-      el.classList.add("code-block-end");
-    }
-
-    if (isCodeBlock) {
-      el.innerHTML = el.innerHTML.replace(/\s/g, "&nbsp;");
-
-      el.classList.add("code-block");
-      if (el.innerHTML.match(/[<>]/)) {
-        // remove html tags
-        el.textContent = el.innerText;
+    if (
+      allCodeBlocksCount % 2 === 1 &&
+      codeBlockIndex >= allCodeBlocksCount - 1
+    ) {
+      /* only add codeblock if it has also a closing ``` */
+    } else {
+      if (l.match(/^```/) && !isCodeBlock) {
+        isCodeBlock = true;
+        el.classList.add("code-block-start");
+        codeBlockIndex++;
+        codeBlocks = [];
+      } else if (l.match(/^```$/) && isCodeBlock) {
+        isCodeBlock = false;
+        codeBlockIndex++;
+        el.classList.add("code-block");
+        el.classList.add("code-block-end");
       }
-      codeBlocks.push(el);
+
+      if (isCodeBlock) {
+        el.innerHTML = el.innerHTML.replace(/\s/g, "&nbsp;");
+
+        el.classList.add("code-block");
+        if (el.innerHTML.match(/[<>]/)) {
+          // remove html tags
+          el.textContent = el.innerText;
+        }
+        codeBlocks.push(el);
+      }
     }
+
     if (el.innerHTML.trim() === "") {
       el.innerHTML = "<br>";
     }
     return el;
   });
-  // TODO: check
-  // check for unclosed code block
-  if (isCodeBlock && codeBlocks.length > 0) {
-    codeBlocks.forEach((el) => {
-      el.classList.remove("code-block");
-      el.classList.remove("code-block-start");
-    });
-  }
 }
 
 function inlineMarkdown(text) {
-    if (
-      text.startsWith("`") &&
-      text.endsWith("`") &&
-      text[1] != "`" &&
-      text !== "`"
-    ) {
-      return `<code>${text}</code>`;
+  if (
+    text.startsWith("`") &&
+    text.endsWith("`") &&
+    text[1] != "`" &&
+    text !== "`"
+  ) {
+    return `<code>${text}</code>`;
+  }
+
+  let html = helper.escapeHTMLEntities(text);
+
+  // find bold+italic
+  html = html.replace(/([*\\]*)(\*{3}[^\s]+.*?\*{3})([*]*)/g, (...matches) => {
+    if (matches[1] || matches[3]) {
+      return matches[0];
     }
+    return `<strong><em>${matches[2]}</em></strong>`;
+  });
 
-    let html = helper.escapeHTMLEntities(text);
-
-    // find bold+italic
-    html = html.replace(
-      /([*\\]*)(\*{3}[^\s]+.*?\*{3})([*]*)/g,
-      (...matches) => {
-        if (matches[1] || matches[3]) {
-          return matches[0];
-        }
-        return `<strong><em>${matches[2]}</em></strong>`;
-      },
-    );
-
-    // find *italic* / _italic_
-    html = html
-      .replace(/([*\\]*)(\*{1}[^\s]+.*?\*{1})([*]*)/g, (...matches) => {
-        if (matches[1] || matches[3]) {
-          return matches[0];
-        }
-        return `<em>${matches[2]}</em>`;
-      })
-      .replace(/([_\\]*)(_{1}[^\s]+.*?_{1})([_]*)/g, (...matches) => {
-        if (matches[1] || matches[3]) {
-          return matches[0];
-        }
-        return `<em>${matches[2]}</em>`;
-      });
-
-    // find **bold text** / __bold text__
-    html = html
-      .replace(/([*\\]*)(\*\*[^\s]+.*?\*\*)([*\\]*)/g, (...matches) => {
-        if (matches[1] || matches[3]) {
-          return matches[0];
-        }
-        return `<strong>${matches[2]}</strong>`;
-      })
-      .replace(/([_\\]*)(__[^\s]+.*?__)([_\\]*)/g, (...matches) => {
-        if (matches[1] || matches[3]) {
-          return matches[0];
-        }
-        return `<strong>${matches[2]}</strong>`;
-      });
-
-    // find strike through text
-    html = html.replace(
-      /([~\\])*(~~[^~][^\s]+.*?~~)([~])*/g,
-      (...matches) => {
-        if (matches[1] || matches[3]) {
-          return matches[0];
-        }
-        return `<s>${matches[2]}</s>`;
-      },
-    );
-
-    // find links
-    html = html.replace(/(\!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
-      let classes = ["link", matches[1] ? "image" : ""]
-        .filter((v) => !!v)
-        .join(" ");
-      let url = helper.stripHtml(matches[3]);
-      return `<a href="${url}" style="--url: url(${url})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${url})</span></a>`;
+  // find *italic* / _italic_
+  html = html
+    .replace(/([*\\]*)(\*{1}[^\s]+.*?\*{1})([*]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<em>${matches[2]}</em>`;
+    })
+    .replace(/([_\\]*)(_{1}[^\s]+.*?_{1})([_]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<em>${matches[2]}</em>`;
     });
 
-    return html;
+  // find **bold text** / __bold text__
+  html = html
+    .replace(/([*\\]*)(\*\*[^\s]+.*?\*\*)([*\\]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<strong>${matches[2]}</strong>`;
+    })
+    .replace(/([_\\]*)(__[^\s]+.*?__)([_\\]*)/g, (...matches) => {
+      if (matches[1] || matches[3]) {
+        return matches[0];
+      }
+      return `<strong>${matches[2]}</strong>`;
+    });
 
+  // find strike through text
+  html = html.replace(/([~\\])*(~~[^~][^\s]+.*?~~)([~])*/g, (...matches) => {
+    if (matches[1] || matches[3]) {
+      return matches[0];
+    }
+    return `<s>${matches[2]}</s>`;
+  });
+
+  // find links
+  html = html.replace(/(\!)*\[(.+?)\]\((.+?)\)/g, (...matches) => {
+    let classes = ["link", matches[1] ? "image" : ""]
+      .filter((v) => !!v)
+      .join(" ");
+    let url = helper.stripHtml(matches[3]);
+    return `<a href="${url}" style="--url: url(${url})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${url})</span></a>`;
+  });
+
+  return html;
 }
 
 export function addParagraphClasses(elements, document) {
