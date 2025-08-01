@@ -674,7 +674,7 @@ class FocusEditorCore {
       Cursor.setCurrentCursorPosition(
         textIsSplitAt > 0
           ? current.dataset.autocompletePattern?.length
-          : current.innerText.length,
+          : current.innerText.length - 1,
         current,
       );
     };
