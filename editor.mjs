@@ -112,7 +112,7 @@ focusEditor.addEventListener("drop", (event) => {
   reader.readAsText(file);
 });
 
-focusEditor.addEventListener("input", (ev) => {
+focusEditor.addEventListener("keyup", () => {
   rememberText();
 });
 

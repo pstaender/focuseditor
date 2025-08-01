@@ -6,7 +6,6 @@ import UndoText from "./UndoText.mjs";
 
 /** Focus Editor Core class creates the editable content element and manages all its' changes on the text */
 class FocusEditorCore {
-  #debug = false;
   #readonly = false;
   #tabSize = 0;
   #caretPosition = [];
@@ -216,18 +215,12 @@ class FocusEditorCore {
     Cursor.setCurrentCursorPosition(position, this.target);
   }
 
-  #debugLog(...args) {
-    if (this.#debug) {
-      console.debug(...args);
-    }
-  }
-
   #storeLastCaretPosition(
     paragraph = helper.currentBlockWithCaret(),
     offset = 0,
   ) {
     if (!paragraph) {
-      this.#debugLog("no element with current caret");
+      console.debug?.("no element with current caret");
       return;
     }
     const caretPosition = Cursor.getCurrentCursorPosition(paragraph);
@@ -240,7 +233,7 @@ class FocusEditorCore {
     { offset = 0 } = {},
   ) {
     if (!paragraph) {
-      this.#debugLog("no element with current caret");
+      console.debug?.("no element with current caret");
       return;
     }
     const caretPosition = this.#caretPosition.pop();
@@ -315,8 +308,9 @@ class FocusEditorCore {
     if (!value) {
       return;
     }
+    this.target.blur();
     this.target.focus();
-    this.target.click();
+    // this.target.click();
     this.#addCssClassToBlockWithCaret();
   }
 
@@ -439,13 +433,12 @@ class FocusEditorCore {
   }
 
   #onKeyDown(event) {
-    this.#debugLog("onKeyDown", event.key);
-
     this.#checkPlaceholder();
     this.#addCssClassToBlockWithCaret();
 
+    const currentParagraph = helper.currentBlockWithCaret();
+
     if (event.key === "Enter" && !event.shiftKey) {
-      const currentParagraph = helper.currentBlockWithCaret();
       if (currentParagraph) {
         if (this.#onHittingEnter) {
           event.preventDefault();
@@ -472,6 +465,17 @@ class FocusEditorCore {
 
     this.#textLengthOnKeyDown = this.target.innerText.length;
 
+    if ((event.ctrlKey || event.metaKey) && event.key === 'x') {
+      if (currentParagraph?.nextElementSibling && !window.getSelection().toString()) {
+        // copy text and remove it
+        if (currentParagraph.textContent.trim() !== '') {
+          navigator.clipboard.writeText(currentParagraph.textContent);
+        }
+        Cursor.setCurrentCursorPosition(0, currentParagraph.nextElementSibling);
+        currentParagraph.remove();
+      }
+    }
+
     if ((event.ctrlKey && event.altKey) || (event.altKey && event.shiftKey)) {
       for (let name in this.#keyboardShortcuts) {
         if (this.#keyboardShortcuts[name].accessKey === event.code) {
@@ -493,8 +497,6 @@ class FocusEditorCore {
   }
 
   #onKeyUp(event) {
-    this.#debugLog("onKeyUp", event.key);
-
     if (event.isComposing) {
       return;
     }
