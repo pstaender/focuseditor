@@ -778,7 +778,7 @@ class FocusEditorCore {
 
     let matches = previousText.match(lineBeginsWithUnorderedList);
 
-    if (matches && matches[1]) {
+    if (matches && matches[1] && textIsSplitAt <= 0) {
       let previousTextTrimmed = insertedElementText
         .replace(lineBeginsWithUnorderedList, "")
         .trim();
@@ -849,7 +849,7 @@ class FocusEditorCore {
   }
 
   #addUndoStep(currentParagraph) {
-    //#maxUndoSteps
+    this.#textUndo.maxSteps = this.#maxUndoSteps;
     this.#textUndo.add(
       this.getMarkdown(),
       currentParagraph?.parentNode

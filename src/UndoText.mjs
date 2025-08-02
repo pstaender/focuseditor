@@ -6,12 +6,18 @@ export default class UndoText {
   #position = -1;
   #previousText = null;
   #currentText = null;
+  #maxSteps = Infinity;
 
   SEPARATOR = '\n';
 
   add(text, additionalData = {}) {
     if (text === this.#previousText || text === this.#currentText) {
       return;
+    }
+    if (this.#position >= this.#maxSteps) {
+      // shift array
+      this.#undos.shift();
+      this.#position--;
     }
     const cutOff = this.#position < this.#undos.length - 1;
     let previousText = this.previous() ? this.previous().text : this.#previousText;
@@ -75,6 +81,10 @@ export default class UndoText {
       text: difflib.restore(this.#undos[this.#position].diff, 2).join(this.SEPARATOR),
       additionalData: this.#undos[this.#position].additionalData
     };
+  }
+
+  set maxSteps(maxSteps) {
+    this.#maxSteps = Number(maxSteps);
   }
 
   previous() {
