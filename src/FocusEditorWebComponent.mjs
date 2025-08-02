@@ -1,18 +1,5 @@
 import FocusEditorCore from "./FocusEditorCore.mjs";
-
-function debounce(func, wait, immediate) {
-  let timeout;
-  return function () {
-    let context = this;
-    let args = arguments;
-    clearTimeout(timeout);
-    timeout = setTimeout(function () {
-      timeout = null;
-      if (!immediate) func.apply(context, args);
-    }, wait);
-    if (immediate && !timeout) func.apply(context, args);
-  };
-}
+import { debounce } from "./helper.mjs";
 
 /** FocusEditorWebComponent replaces a given HTML element with a editable foxus editor element */
 class FocusEditorWebComponent extends HTMLElement {

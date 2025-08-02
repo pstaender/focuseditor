@@ -194,6 +194,7 @@ class FocusEditorCore {
     this.target.addEventListener("paste", (ev) => this.#onPaste(ev));
     this.target.addEventListener("copy", (ev) => this.#onCopy(ev));
     this.target.addEventListener("blur", (ev) => this.#onBlur(ev));
+    this.target.addEventListener("input", (ev) => this.#onInput(ev));
     this.target.parentElement.addEventListener("scroll", (ev) =>
       this.#onScroll(ev, this),
     );
@@ -437,6 +438,10 @@ class FocusEditorCore {
     this.#checkPlaceholder();
   }
 
+  #onInput() {
+    this.#checkPlaceholder();
+  }
+
   #onClick(event) {
     this.#addCssClassToBlockWithCaret();
     if (event.isTrusted) {
@@ -466,6 +471,20 @@ class FocusEditorCore {
       return;
     }
 
+    if (helper.isSafari() && this.target.textContent === '') {
+      if (event.key === "Backspace" || (event.key.metaKey && event.key === "x")) {
+        // Prevents safaris' incorrect behaviour:
+        // Removing all text causes setting caret out of blocks after
+        event.preventDefault();
+        setTimeout(() => {
+          let block = this.target.querySelector('.block');
+          if (!block) return;
+          FocusEditorCore.#activateElementWithClickFocusAndCaret(block);
+        }, 10);
+        return;
+      }
+    }
+
     if (
       event.key === "Backspace" &&
       !event.shiftKey &&
@@ -473,10 +492,9 @@ class FocusEditorCore {
       !event.ctrlKey
     ) {
       if (this.#onHittingBackspace(event, currentParagraph)) {
-        event.preventDefault();
         this.#onHittingBackspace(event, currentParagraph);
+        return;
       }
-      return;
     }
 
     if (
@@ -585,7 +603,7 @@ class FocusEditorCore {
     ) {
       /* Firefox Bug (2): When selecting all text and clean it, not div is there anymore */
       this.refresh();
-      Cursor.setCurrentCursorPosition(0, this.target.querySelector(".block"));
+      Cursor.setCurrentCursorPosition(this.target.textContent.length, this.target.querySelector(".block"));
     }
 
     this.#addCssClassToBlockWithCaret();
@@ -607,7 +625,7 @@ class FocusEditorCore {
             .filter((v) => !!v.data.trim());
           elements.forEach((el) => {
             let div = document.createElement("div");
-            div.innerText = el.innerText;
+            div.textContent = el.textContent || '';
             div.classList.add("block");
             if (el.nextElementSibling) {
               el.nextElementSibling.after(div);
@@ -660,11 +678,13 @@ class FocusEditorCore {
   #onHittingBackspace(event, current) {
     /* fixes caret jumping on backspace on blocks which where created outside view scope */
     let cursorPosition = Cursor.getCurrentCursorPosition(current);
+
     if (cursorPosition === 0 && current.previousElementSibling) {
       let prev = current.previousElementSibling;
+      let pos = prev.textContent.length;
       setTimeout(() => {
-        Cursor.setCurrentCursorPosition(prev.textContent.length, prev);
-      }, 1);
+        Cursor.setCurrentCursorPosition(pos, prev);
+      }, helper.isTouchDevice() ? 20 : 5);
     }
   }
 

@@ -270,10 +270,19 @@ focus-editor.textarea {
   resize: both;
   --editor-vertical-padding: calc(0.5 * var(--space));
   --editor-horizontal-padding: var(--space);
-  --rows: attr(rows type(<number>), 5);
+  --rows: 5;
+  @supports (x: attr(x type(*))) {
+    --rows: attr(rows type(<number>), 5);
+  }
   width: clamp(5em, 35em, 100%);
-  min-height: calc(var(--line-height) * 2 + var(--editor-vertical-padding) + var(--editor-vertical-padding));
-  height: calc(var(--line-height) * var(--rows) + var(--editor-vertical-padding) + var(--editor-vertical-padding));
+  min-height: calc(
+    var(--line-height) * 2 + var(--editor-vertical-padding) +
+      var(--editor-vertical-padding)
+  );
+  height: calc(
+    var(--line-height) * var(--rows) + var(--editor-vertical-padding) +
+      var(--editor-vertical-padding)
+  );
 
   &:focus-within {
     outline: 2px auto Highlight;
