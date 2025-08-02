@@ -1,5 +1,19 @@
 import FocusEditorCore from "./FocusEditorCore.mjs";
 
+function debounce(func, wait, immediate) {
+  let timeout;
+  return function () {
+    let context = this;
+    let args = arguments;
+    clearTimeout(timeout);
+    timeout = setTimeout(function () {
+      timeout = null;
+      if (!immediate) func.apply(context, args);
+    }, wait);
+    if (immediate && !timeout) func.apply(context, args);
+  };
+}
+
 /** FocusEditorWebComponent replaces a given HTML element with a editable foxus editor element */
 class FocusEditorWebComponent extends HTMLElement {
   static observedAttributes = [
@@ -21,27 +35,41 @@ class FocusEditorWebComponent extends HTMLElement {
       text = text.replace(/\r/g, "\n");
       const firstLine = text.split("\n").filter((t) => t.length > 0)[0];
       const initialSpace = firstLine
-          ? firstLine.match(/^\s+/)
-            ? firstLine.match(/^\s+/)[0]?.length
-            : 0
-          : 0;
+        ? firstLine.match(/^\s+/)
+          ? firstLine.match(/^\s+/)[0]?.length
+          : 0
+        : 0;
       if (initialSpace === 0) {
         return text;
       }
-      return text.split("\n").map((l) => l.replace(new RegExp(`^\\s{${initialSpace}}`), "")).join("\n");
+      return text
+        .split("\n")
+        .map((l) => l.replace(new RegExp(`^\\s{${initialSpace}}`), ""))
+        .join("\n");
     }
 
     const div = document.createElement("div");
-    let text = this.getAttribute("value") || removeLeadingWhitespaces(this.textContent.replace(/\n\s+$/, ""));
+    let text =
+      this.getAttribute("value") ||
+      removeLeadingWhitespaces(this.textContent.replace(/\n\s+$/, ""));
 
-    if (this.childElementCount && this.firstElementChild.tagName === "TEXTAREA") {
-      this.classList.add('textarea');
+    if (
+      this.childElementCount &&
+      this.firstElementChild.tagName === "TEXTAREA"
+    ) {
+      this.classList.add("textarea");
 
-      if (!this.getAttribute('name') && this.firstElementChild.getAttribute('name')) {
-        this.setAttribute('name', this.firstElementChild.getAttribute('name'));
+      if (
+        !this.getAttribute("name") &&
+        this.firstElementChild.getAttribute("name")
+      ) {
+        this.setAttribute("name", this.firstElementChild.getAttribute("name"));
       }
-      if (!this.getAttribute('id') && this.firstElementChild.getAttribute('id') !== null) {
-        this.setAttribute('id', this.firstElementChild.getAttribute('id'));
+      if (
+        !this.getAttribute("id") &&
+        this.firstElementChild.getAttribute("id") !== null
+      ) {
+        this.setAttribute("id", this.firstElementChild.getAttribute("id"));
       }
     }
 
@@ -57,8 +85,17 @@ class FocusEditorWebComponent extends HTMLElement {
     if (this.hasAttribute("placeholder")) {
       this.editor.placeholder = this.getAttribute("placeholder");
     }
-    this.addEventListener("input", () => this.#syncValueForTextareaElement());
-    this.#syncValueForTextareaElement();
+
+    this.addEventListener("input", () =>
+      this.#syncValueForTextareaElementDebounced(),
+    );
+    this.addEventListener("keydown", () =>
+      this.#syncValueForTextareaElementDebounced(),
+    );
+    this.addEventListener("keyup", () =>
+      this.#syncValueForTextareaElementDebounced(),
+    );
+
   }
 
   #syncValueForTextareaElement = (inputName = this.getAttribute("name")) => {
@@ -74,6 +111,11 @@ class FocusEditorWebComponent extends HTMLElement {
     }
     textArea.innerText = this.value;
   };
+
+  #syncValueForTextareaElementDebounced = debounce(
+    this.#syncValueForTextareaElement,
+    10,
+  );
 
   set value(text) {
     this.editor.replaceText(text, { clearHistory: true });
@@ -97,6 +139,7 @@ class FocusEditorWebComponent extends HTMLElement {
       this.#syncValueForTextareaElement(newValue);
     }
   }
+
 }
 
 export default FocusEditorWebComponent;

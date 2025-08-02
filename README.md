@@ -54,6 +54,8 @@ window.initFocusEditor();
 
 ### Todos
 
+- [ ] refactor Cursor class and helper module
+- [ ] sync web component with textarea/input
 - [ ] better docs
 
 ### License

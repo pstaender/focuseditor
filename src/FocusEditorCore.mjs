@@ -14,6 +14,7 @@ class FocusEditorCore {
   #placeholder = "";
   #maxUndoSteps = 200;
   #textUndo = new UndoText();
+  #scrollIntoViewOptions = { block: "center" };
 
   #keyboardShortcuts = {
     refresh: {
@@ -87,13 +88,16 @@ class FocusEditorCore {
   /**
    * Replaces the current text with new text
    * @param {string} text
+   * @param {Object} options
+   * @param {boolean} options.clearHistory
+   * @param {boolean} options.dontAddToHistory
    */
   replaceText(text, { clearHistory = false, dontAddToHistory = false } = {}) {
     // TODO: not sure that this rule is a good idea? But often empty text is set as \n…
     if (text === "\n") {
       text = "";
     }
-    this.target.innerHTML = md2html.innerTextToHtml(text, document);
+    this.target.innerHTML = md2html.innerTextToHtml(text || "", document);
     this.#updateChildrenElementsWithMarkdownClasses();
     this.#addCssClassToBlockWithCaret();
     this.target.parentElement.scroll({ top: 0 });
@@ -115,7 +119,14 @@ class FocusEditorCore {
   }
 
   #visibleChildren() {
-    return [...this.allChildren()].filter((el) => helper.elementIsVisible(el));
+    return [...this.allChildren()].filter((el) =>
+      helper.elementIsVisible(el, {
+        offsetTop: -1000,
+        offsetBottom: -1000,
+        offsetLeft: 0,
+        offsetRight: 0,
+      }),
+    );
   }
 
   /**
@@ -150,10 +161,7 @@ class FocusEditorCore {
   getMarkdown() {
     let text = [];
     if (!this.target.querySelector(".block") && this.target.textContent) {
-      // firefox bug
-      if (!helper.isFirefox()) {
-        console.error("No .block element found");
-      }
+      console.warn("No .block element found");
       return this.target.textContent;
     }
     this.target
@@ -185,6 +193,7 @@ class FocusEditorCore {
     this.target.addEventListener("click", (ev) => this.#onClick(ev));
     this.target.addEventListener("paste", (ev) => this.#onPaste(ev));
     this.target.addEventListener("copy", (ev) => this.#onCopy(ev));
+    this.target.addEventListener("blur", (ev) => this.#onBlur(ev));
     this.target.parentElement.addEventListener("scroll", (ev) =>
       this.#onScroll(ev, this),
     );
@@ -254,9 +263,9 @@ class FocusEditorCore {
       if (!current) return;
     } catch (e) {
       if (helper.isFirefox()) {
-        console.warn(e);
+        console.info(e);
       } else {
-        console.error(e);
+        console.warn(e);
       }
       return;
     }
@@ -368,12 +377,19 @@ class FocusEditorCore {
   }
 
   #checkPlaceholder() {
+    if (!this.target.querySelector(".block")) {
+      let div = document.createElement("div");
+      div.classList.add("block");
+      div.textContent = this.target.textContent;
+      this.target.textContent = "";
+      this.target.appendChild(div);
+      this.#updateAllVisibleElements();
+    }
+
     if (!this.#placeholder) {
       return;
     }
-    if (!this.target.querySelector(".block")) {
-      return;
-    }
+
     // for aesthetic reasons: add a small delay to ensure the placeholder is removed before checking if the editor is empty (sometimes the editor is not empty yet during check)
     setTimeout(() => {
       this.target
@@ -417,6 +433,10 @@ class FocusEditorCore {
     }, 1);
   }
 
+  #onBlur() {
+    this.#checkPlaceholder();
+  }
+
   #onClick(event) {
     this.#addCssClassToBlockWithCaret();
     if (event.isTrusted) {
@@ -438,14 +458,25 @@ class FocusEditorCore {
 
     const currentParagraph = helper.currentBlockWithCaret();
 
-    if (event.key === "Enter" && !event.shiftKey) {
-      if (currentParagraph) {
-        if (this.#onHittingEnter) {
-          event.preventDefault();
-          this.#onHittingEnter(event, currentParagraph);
-        }
-        return;
+    if (event.key === "Enter" && !event.shiftKey && currentParagraph) {
+      if (this.#onHittingEnter) {
+        event.preventDefault();
+        this.#onHittingEnter(event, currentParagraph);
       }
+      return;
+    }
+
+    if (
+      event.key === "Backspace" &&
+      !event.shiftKey &&
+      !event.metaKey &&
+      !event.ctrlKey
+    ) {
+      if (this.#onHittingBackspace(event, currentParagraph)) {
+        event.preventDefault();
+        this.#onHittingBackspace(event, currentParagraph);
+      }
+      return;
     }
 
     if (
@@ -465,10 +496,13 @@ class FocusEditorCore {
 
     this.#textLengthOnKeyDown = this.target.innerText.length;
 
-    if ((event.ctrlKey || event.metaKey) && event.key === 'x') {
-      if (currentParagraph?.nextElementSibling && !window.getSelection().toString()) {
+    if ((event.ctrlKey || event.metaKey) && event.key === "x") {
+      if (
+        currentParagraph?.nextElementSibling &&
+        !window.getSelection().toString()
+      ) {
         // copy text and remove it
-        if (currentParagraph.textContent.trim() !== '') {
+        if (currentParagraph.textContent.trim() !== "") {
           navigator.clipboard.writeText(currentParagraph.textContent);
         }
         Cursor.setCurrentCursorPosition(0, currentParagraph.nextElementSibling);
@@ -623,6 +657,17 @@ class FocusEditorCore {
     Cursor.setCurrentCursorPosition(el.innerText.length, el);
   }
 
+  #onHittingBackspace(event, current) {
+    /* fixes caret jumping on backspace on blocks which where created outside view scope */
+    let cursorPosition = Cursor.getCurrentCursorPosition(current);
+    if (cursorPosition === 0 && current.previousElementSibling) {
+      let prev = current.previousElementSibling;
+      setTimeout(() => {
+        Cursor.setCurrentCursorPosition(prev.textContent.length, prev);
+      }, 1);
+    }
+  }
+
   #onHittingEnter(event, current) {
     const div = document.createElement("div");
     div.innerHTML = md2html.EMPTY_LINE_HTML_PLACEHOLDER;
@@ -632,35 +677,65 @@ class FocusEditorCore {
     let previousElement = current.previousElementSibling;
     let textIsSplitAt = 0;
 
+    const setCursorToNewPositionAndUpdate = () => {
+      if (!current) current = helper.currentBlockWithCaret();
+      this.#updateAllVisibleElements();
+      // timeout because: if the block is not fully visible yet the cursor may not be in the correct position
+      setTimeout(() => {
+        Cursor.setCurrentCursorPosition(
+          textIsSplitAt > 0
+            ? current.dataset.autocompletePattern?.length
+            : current.textContent.length,
+          current,
+        );
+      }, 1);
+    };
+
     if (cursorPosition === 0) {
       current.before(div);
       Cursor.setCurrentCursorPosition(0, current);
       if (current.classList.contains("code-block")) {
         this.#updateAllVisibleElements();
       }
-      return;
-    } else {
-      if (cursorPosition < current.innerText.length) {
-        // split text
-        let text = current.innerText;
-        current.innerText = text.substr(0, cursorPosition);
-        div.innerText = text.substr(cursorPosition);
-        textIsSplitAt = cursorPosition;
-      }
-      current.after(div);
       if (
-        current.classList.contains("code-block") &&
-        !current.classList.contains("code-block-end")
+        this.#scrollIntoViewOptions &&
+        (!helper.isElementVisible(current, this.target) ||
+          !helper.elementIsVisible(current))
       ) {
-        div.classList.add("code-block");
+        current.scrollIntoView(this.#scrollIntoViewOptions);
       }
-      previousElement = current;
-      Cursor.setCurrentCursorPosition(0, div);
-      current = div;
+      return;
     }
+
+    if (cursorPosition < current.innerText.length) {
+      // split text
+      let text = current.innerText;
+      current.innerText = text.substr(0, cursorPosition);
+      div.innerText = text.substr(cursorPosition);
+      textIsSplitAt = cursorPosition;
+    }
+    current.after(div);
+    if (
+      current.classList.contains("code-block") &&
+      !current.classList.contains("code-block-end")
+    ) {
+      div.classList.add("code-block");
+    }
+    previousElement = current;
+    Cursor.setCurrentCursorPosition(0, div);
+    current = div;
 
     if (!current) current = helper.currentBlockWithCaret();
     if (!current) return;
+
+    if (
+      this.#scrollIntoViewOptions &&
+      (!helper.isElementVisible(current, this.target) ||
+        !helper.elementIsVisible(current))
+    ) {
+      current.scrollIntoView(this.#scrollIntoViewOptions);
+    }
+
     if (current.classList.contains("code-block")) {
       this.#updateAllVisibleElements();
       return;
@@ -670,16 +745,7 @@ class FocusEditorCore {
       return;
     }
 
-    const setCursorToNewPositionAndUpdate = () => {
-      if (!current) current = helper.currentBlockWithCaret();
-      this.#updateAllVisibleElements();
-      Cursor.setCurrentCursorPosition(
-        textIsSplitAt > 0
-          ? current.dataset.autocompletePattern?.length
-          : current.innerText.length - 1,
-        current,
-      );
-    };
+    /* AUTOCOMPLETE (list items) */
 
     const previousAutocompletePattern =
       previousElement.dataset?.autocompletePattern || "";
@@ -697,6 +763,7 @@ class FocusEditorCore {
         .replace(lineBeginsWithUnorderedList, "")
         .trim();
       current.innerText = matches[1] + previousTextTrimmed;
+
       if (
         previousAutocompletePattern &&
         previousElement.innerText === matches[1]
@@ -757,6 +824,7 @@ class FocusEditorCore {
         return;
       }
       Cursor.setCurrentCursorPosition(caretPosition, this.target);
+      this.#scrollCurrentParagraphIntoView();
     }, 10);
   }
 
@@ -786,7 +854,19 @@ class FocusEditorCore {
         additionalData.caretPosition,
         this.target,
       );
+      this.#scrollCurrentParagraphIntoView();
     }, 10);
+  }
+
+  #scrollCurrentParagraphIntoView() {
+    if (!this.#scrollIntoViewOptions) {
+      return;
+    }
+    let current = this.currentBlockWithCaret();
+    if (!current) {
+      return;
+    }
+    current.scrollIntoView(this.#scrollIntoViewOptions);
   }
 
   /**

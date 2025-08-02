@@ -42,6 +42,13 @@ focus-editor {
     }
   }
 
+  &.indent-headings .block[data-placeholder]:before {
+    left: calc(
+      0px + var(--editor-vertical-padding) +
+        calc(var(--space-left) * var(--margin-left-factor))
+    );
+  }
+
   &[color-scheme="light"] {
     color-scheme: light;
   }
@@ -92,6 +99,9 @@ focus-editor {
         background-color 0.05s,
         transform var(--transition-duration);
     }
+    /* .block:last-child {
+      padding-bottom: 2rem;
+    } */
 
     .code-block {
       background: var(--color-grey-light);
@@ -260,10 +270,10 @@ focus-editor.textarea {
   resize: both;
   --editor-vertical-padding: calc(0.5 * var(--space));
   --editor-horizontal-padding: var(--space);
+  --rows: attr(rows type(<number>), 5);
   width: clamp(5em, 35em, 100%);
-  min-height: 4.5em;
-  height: 10em;
-  /* max-height: clamp(5em, 15em, auto); */
+  min-height: calc(var(--line-height) * 2 + var(--editor-vertical-padding) + var(--editor-vertical-padding));
+  height: calc(var(--line-height) * var(--rows) + var(--editor-vertical-padding) + var(--editor-vertical-padding));
 
   &:focus-within {
     outline: 2px auto Highlight;
@@ -354,10 +364,7 @@ focus-editor {
       content: attr(data-placeholder);
       position: absolute;
       top: 0;
-      left: calc(
-        0px + var(--editor-vertical-padding) +
-          calc(var(--space-left) * var(--margin-left-factor))
-      );
+      left: 0;
       line-height: var(--line-height);
       color: var(--color-grey);
       font-weight: normal;
@@ -367,8 +374,11 @@ focus-editor {
   .block[data-placeholder] + .block[data-placeholder]:before {
     display: none;
   }
+  /* visual fix for safari: sometimes a br is insert before placeholder */
+  br:has(~ .block[data-placeholder]) {
+    display: none;
+  }
 }
-
 focus-editor[image-preview] {
   .link.image {
     span {

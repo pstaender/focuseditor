@@ -37,8 +37,8 @@ export function currentBlockWithCaret() {
 export function elementIsVisible(
   el,
   {
-    offsetTop = -1000,
-    offsetBottom = -1000,
+    offsetTop = 0,
+    offsetBottom = 0,
     offsetLeft = 0,
     offsetRight = 0,
   } = {},
@@ -53,6 +53,25 @@ export function elementIsVisible(
     rect.right <=
       (window.innerWidth || document.documentElement.clientWidth) - offsetRight
   );
+}
+
+export function isElementVisible(element, container = null) {
+  if (!container) {
+     return !!( element.offsetWidth || element.offsetHeight || element.getClientRects().length );
+  }
+  const elRect = element.getBoundingClientRect();
+  const conRect = container.getBoundingClientRect();
+
+  if (
+    elRect.x >= conRect.x &&
+    elRect.y >= conRect.y &&
+    elRect.x + elRect.width <= conRect.x + conRect.width &&
+    elRect.y + elRect.height <= conRect.y + conRect.height
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 export function isSafari() {
@@ -104,11 +123,10 @@ export function removeStyleAttributeRecursively(el) {
   el.querySelectorAll("[style]").forEach((el) => el.removeAttribute("style"));
 }
 
-export function stripHtml(html)
-{
-   let tmp = document.createElement("DIV");
-   tmp.innerHTML = html;
-   return tmp.textContent || tmp.innerText || "";
+export function stripHtml(html) {
+  let tmp = document.createElement("DIV");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
 }
 
 export function htmlToText(html) {
