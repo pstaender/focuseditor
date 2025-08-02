@@ -3,6 +3,8 @@
 
 [See the demo 🚀](https://pstaender.github.io/focuseditor/)
 
+<img width="549" height="572" alt="Bildschirmfoto 2025-08-02 um 06 58 55" src="https://github.com/user-attachments/assets/20b5cc9f-4842-43ed-a066-65b9fb630a03" />
+
 ### Features
 
 - distraction free **zen-mode**
@@ -54,9 +56,10 @@ window.initFocusEditor();
 
 ### Todos
 
-- [ ] refactor Cursor class and helper module
-- [ ] sync web component with textarea/input
-- [ ] better docs
+- [ ] refactor cursor class, md and helper module
+- [ ] sync web component with existing textarea/input
+- [ ] limit undo steps
+- [ ] complete api docs
 
 ### License
 
