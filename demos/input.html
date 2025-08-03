@@ -10,7 +10,7 @@
   </head>
   <body>
     <div class="demo-code">
-      <div>
+      <pre>
         <focus-editor class="textarea" autofocus style="width: 100%;">
           ## Triggered input events are fired if the text has been changed
 
@@ -22,18 +22,21 @@
             });
           ```
         </focus-editor>
-        <div id="content"></div>
+        <pre id="content"></pre>
       </div>
 
       <script type="module">
         import FocusEditor from "../src/FocusEditor.mjs";
-        import * as markdownConverter from "https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js";
 
         FocusEditor();
 
         const update = (ev) => {
-          document.getElementById("content").innerHTML = marked.parse(
-            focusEditor.value,
+          let {isTrusted, data, eventPhase, inputType, isComposing, type, target} = ev;
+          target = target.outerHTML;
+          document.getElementById("content").textContent = JSON.stringify(
+            {isTrusted, data, eventPhase, inputType, isComposing, type, target},
+            null,
+            2
           );
         };
         const focusEditor = document.querySelector("focus-editor");

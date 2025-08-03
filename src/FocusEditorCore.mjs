@@ -430,7 +430,8 @@ class FocusEditorCore {
     event.preventDefault();
     setTimeout(async () => {
       this.refresh();
-      let offset = this.target.textContent.length - this.#textLengthOnKeyDown + 2;
+      let offset =
+        this.target.textContent.length - this.#textLengthOnKeyDown + 2;
 
       this.#restoreEditorCaretPosition({
         offset,
@@ -441,8 +442,24 @@ class FocusEditorCore {
   #onBlur() {
     this.#checkPlaceholder();
   }
-
-  #onInput() {
+  #onInput(ev) {
+    /*
+      Safari Bug: When pasting text fro autosuggestion, safari sometimes adds a leadinng Whitespace
+      -> remove leading whitespace then
+    */
+    if (helper.isSafari() && helper.isTouchDevice() && ev.data) {
+      let current = helper.currentBlockWithCaret();
+      if (
+        current &&
+        ev.data.length > 1 &&
+        ev.data.startsWith(" ") &&
+        ev.data === current.textContent
+      ) {
+        current.textContent = current.textContent.trimStart();
+        // set cursor back to end position
+        Cursor.setCurrentCursorPosition(current.textContent.length, current);
+      }
+    }
     this.#checkPlaceholder();
   }
 
@@ -561,7 +578,6 @@ class FocusEditorCore {
     }
 
     this.#checkPlaceholder();
-
 
     if (!document.fullscreenElement) {
       this.target.parentElement.classList.remove("zen-mode");
