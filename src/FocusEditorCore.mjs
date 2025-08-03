@@ -475,13 +475,16 @@ class FocusEditorCore {
       return;
     }
 
-    if (helper.isSafari() && this.target.textContent === '') {
-      if (event.key === "Backspace" || (event.key.metaKey && event.key === "x")) {
+    if (helper.isSafari() && this.target.textContent === "") {
+      if (
+        event.key === "Backspace" ||
+        (event.key.metaKey && event.key === "x")
+      ) {
         // Prevents safaris' incorrect behaviour:
         // Removing all text causes setting caret out of blocks after
         event.preventDefault();
         setTimeout(() => {
-          let block = this.target.querySelector('.block');
+          let block = this.target.querySelector(".block");
           if (!block) return;
           FocusEditorCore.#activateElementWithClickFocusAndCaret(block);
         }, 10);
@@ -607,7 +610,10 @@ class FocusEditorCore {
     ) {
       /* Firefox Bug (2): When selecting all text and clean it, not div is there anymore */
       this.refresh();
-      Cursor.setCurrentCursorPosition(this.target.textContent.length, this.target.querySelector(".block"));
+      Cursor.setCurrentCursorPosition(
+        this.target.textContent.length,
+        this.target.querySelector(".block"),
+      );
     }
 
     this.#addCssClassToBlockWithCaret();
@@ -629,7 +635,7 @@ class FocusEditorCore {
             .filter((v) => !!v.data.trim());
           elements.forEach((el) => {
             let div = document.createElement("div");
-            div.textContent = el.textContent || '';
+            div.textContent = el.textContent || "";
             div.classList.add("block");
             if (el.nextElementSibling) {
               el.nextElementSibling.after(div);
@@ -686,9 +692,12 @@ class FocusEditorCore {
     if (cursorPosition === 0 && current.previousElementSibling) {
       let prev = current.previousElementSibling;
       let pos = prev.textContent.length;
-      setTimeout(() => {
-        Cursor.setCurrentCursorPosition(pos, prev);
-      }, helper.isTouchDevice() ? 20 : 5);
+      setTimeout(
+        () => {
+          Cursor.setCurrentCursorPosition(pos, prev);
+        },
+        helper.isTouchDevice() ? 20 : 5,
+      );
     }
   }
 
@@ -700,6 +709,7 @@ class FocusEditorCore {
 
     let previousElement = current.previousElementSibling;
     let textIsSplitAt = 0;
+    const textSplits = [];
 
     const setCursorToNewPositionAndUpdate = () => {
       if (!current) current = helper.currentBlockWithCaret();
@@ -734,8 +744,10 @@ class FocusEditorCore {
     if (cursorPosition < current.innerText.length) {
       // split text
       let text = current.innerText;
-      current.innerText = text.substr(0, cursorPosition);
-      div.innerText = text.substr(cursorPosition);
+      textSplits[0] = text.substr(0, cursorPosition);
+      textSplits[1] = text.substr(cursorPosition);
+      current.innerText = textSplits[0];
+      div.innerText = textSplits[1];
       textIsSplitAt = cursorPosition;
     }
     current.after(div);
@@ -773,8 +785,8 @@ class FocusEditorCore {
 
     const previousAutocompletePattern =
       previousElement.dataset?.autocompletePattern || "";
-    const insertedElementText = current.innerText;
-    const previousText = previousElement.innerText;
+    const insertedElementText = current.textContent;
+    const previousText = textSplits[0] || previousElement.textContent;
 
     const lineBeginsWithUnorderedList =
       /^(\s*-\s+|\s*\*\s+|\s*•\s+|\s*\*\s+|\s*\+\s+|>+\s*)(.*)$/;
@@ -782,25 +794,28 @@ class FocusEditorCore {
 
     let matches = previousText.match(lineBeginsWithUnorderedList);
 
-    if (matches && matches[1] && textIsSplitAt <= 0) {
+    if (matches && matches[1]) {
       let previousTextTrimmed = insertedElementText
         .replace(lineBeginsWithUnorderedList, "")
         .trim();
-      current.innerText = matches[1] + previousTextTrimmed;
+      current.textContent = matches[1] + previousTextTrimmed;
 
       if (
-        previousAutocompletePattern &&
-        previousElement.innerText === matches[1]
+        // previousAutocompletePattern &&
+        //new RegExp(previousAutocompletePattern.slice(1, -1)).test(previousText) &&
+        previousText === matches[1]
       ) {
-        current.innerText = previousTextTrimmed || "";
-        previousElement.innerText = "";
+        current.textContent = previousTextTrimmed || "";
+        previousElement.textContent = "";
         this.#updateAllVisibleElements();
         return;
       }
-      current.dataset.autocompletePattern = matches[1];
+      current.dataset.autocompletePattern = lineBeginsWithUnorderedList;
       setCursorToNewPositionAndUpdate();
     } else {
-      matches = previousText.match(lineBeginsWithOrderedList);
+      matches = (textSplits[0] || previousText).match(
+        lineBeginsWithOrderedList,
+      );
       if (matches && matches[2] && matches[3]) {
         let autocompleteText =
           (matches[1] || "") +
@@ -810,16 +825,27 @@ class FocusEditorCore {
         let previousTextTrimmed = insertedElementText
           .replace(lineBeginsWithOrderedList, "")
           .trim();
-        current.innerText = autocompleteText + previousTextTrimmed;
+        current.textContent = autocompleteText + previousTextTrimmed;
         if (
           previousAutocompletePattern &&
-          previousElement.innerText === current.innerText
+          previousElement.textContent === current.textContent
         ) {
-          current.innerText = previousTextTrimmed || "";
-          previousElement.innerText = "";
+          current.textContent = previousTextTrimmed || "";
+          previousElement.textContent = "";
           return;
         }
-        current.dataset.autocompletePattern = autocompleteText;
+        current.dataset.autocompletePattern = lineBeginsWithOrderedList;
+      } else if (
+        previousElement.textContent &&
+        previousElement.dataset.autocompletePattern &&
+        !current.textContent.match(
+          new RegExp(previousElement.dataset.autocompletePattern.slice(1, -1)),
+        )
+      ) {
+        previousElement.innerText = "";
+        delete previousElement.dataset.autocompletePattern;
+        delete current.dataset.autocompletePattern;
+        return;
       }
       setCursorToNewPositionAndUpdate();
     }
