@@ -72,6 +72,12 @@ focus-editor {
   color: var(--color-text, light-dark(#000, #fff));
   background-color: var(--color-background, light-dark(#fff, #202020));
 
+  @media (hover) {
+    .focus-editor[contenteditable="true"]:hover {
+      cursor: text;
+    }
+  }
+
   &:not(.textarea) .focus-editor[contenteditable="true"] {
     outline: none;
   }

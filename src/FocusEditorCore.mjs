@@ -593,7 +593,7 @@ class FocusEditorCore {
       window.getSelection().extentOffset - window.getSelection().baseOffset,
     );
 
-    const textIsSelectedInBlock =
+    let textIsSelectedInBlock =
       selectionRange > 0 &&
       (window
         .getSelection()
@@ -603,6 +603,11 @@ class FocusEditorCore {
           .baseNode?.parentNode?.closest(".focus-editor[contenteditable]"))
         ? true
         : false;
+
+    if (helper.isFirefox() && window.getSelection().extentOffset === undefined) {
+      textIsSelectedInBlock = window.getSelection().toString().length > 0;
+    }
+
 
     if (textIsSelectedInBlock) {
       return;
