@@ -15,6 +15,7 @@ class FocusEditorCore {
   #maxUndoSteps = 200;
   #textUndo = new UndoText();
   #scrollIntoViewOptions = { block: "center" };
+  #target = null;
 
   #keyboardShortcuts = {
     refresh: {
@@ -82,7 +83,11 @@ class FocusEditorCore {
 
     BrowserFixes.noDivInsideContentEditable(this.target);
 
-    this.#prepareTargetHTMLElement(initialText);
+    this.target.innerHTML = md2html.innerTextToHtml(
+      helper.removeFirstLineBreak(initialText),
+      document,
+    );
+    this.#updateChildrenElementsWithMarkdownClasses();
   }
 
   /**
@@ -174,30 +179,6 @@ class FocusEditorCore {
     return text.trim() === "" && this.target.textContent
       ? this.target.textContent
       : text;
-  }
-
-  /* this should only be called once (maybe make it idempotent?) */
-  #prepareTargetHTMLElement(text) {
-    this.target.innerHTML = md2html.innerTextToHtml(
-      helper.removeFirstLineBreak(text),
-      document,
-    );
-    this.#updateChildrenElementsWithMarkdownClasses();
-
-    this.target.classList.add("focus-editor");
-    this.target.contentEditable = true;
-    this.target.setAttribute("role", "textbox");
-    this.target.setAttribute("aria-multiline", "true");
-    this.target.addEventListener("keyup", (ev) => this.#onKeyUp(ev));
-    this.target.addEventListener("keydown", (ev) => this.#onKeyDown(ev));
-    this.target.addEventListener("click", (ev) => this.#onClick(ev));
-    this.target.addEventListener("paste", (ev) => this.#onPaste(ev));
-    this.target.addEventListener("copy", (ev) => this.#onCopy(ev));
-    this.target.addEventListener("blur", (ev) => this.#onBlur(ev));
-    this.target.addEventListener("input", (ev) => this.#onInput(ev));
-    this.target.parentElement.addEventListener("scroll", (ev) =>
-      this.#onScroll(ev, this),
-    );
   }
 
   #hasManyElements() {
@@ -322,6 +303,29 @@ class FocusEditorCore {
     this.target.focus();
     // this.target.click();
     this.#addCssClassToBlockWithCaret();
+  }
+
+  set target(value) {
+    this.#target = value;
+    this.#target.contentEditable = !this.#readonly;
+    this.#target.classList.add("focus-editor");
+    this.#target.contentEditable = true;
+    this.#target.setAttribute("role", "textbox");
+    this.#target.setAttribute("aria-multiline", "true");
+    this.#target.addEventListener("keyup", (ev) => this.#onKeyUp(ev));
+    this.#target.addEventListener("keydown", (ev) => this.#onKeyDown(ev));
+    this.#target.addEventListener("click", (ev) => this.#onClick(ev));
+    this.#target.addEventListener("paste", (ev) => this.#onPaste(ev));
+    this.#target.addEventListener("copy", (ev) => this.#onCopy(ev));
+    this.#target.addEventListener("blur", (ev) => this.#onBlur(ev));
+    this.#target.addEventListener("input", (ev) => this.#onInput(ev));
+    this.#target.parentElement.addEventListener("scroll", (ev) =>
+      this.#onScroll(ev, this),
+    );
+  }
+
+  get target() {
+    return this.#target;
   }
 
   #customTabBehaviour(event) {
