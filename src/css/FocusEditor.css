@@ -181,8 +181,9 @@ focus-editor {
     }
     .blockquote {
       margin-bottom: 0;
+      --margin-left: 0.75rem;
       transform: translateX(
-        calc(var(--margin-left-factor) * var(--space-left) + 2rem)
+        calc(var(--margin-left-factor) * var(--space-left) + var(--margin-left))
       );
       margin-right: calc(0.5 * var(--space-left));
       padding-left: 1rem;
@@ -190,7 +191,7 @@ focus-editor {
       padding-right: 0.25rem;
 
       width: calc(
-        100% - calc(var(--margin-left-factor) * var(--space-left) + 2rem) -
+        100% - calc(var(--margin-left-factor) * var(--space-left) + var(--margin-left)) -
           1.25rem
       );
 

@@ -200,8 +200,8 @@ class FocusEditorCore {
 
   #restoreEditorCaretPosition({ offset = 0 } = {}) {
     let position = this.#editorCaretPosition + offset;
-    if (position > this.target.innerText.length) {
-      position = this.target.innerText.length;
+    if (position > this.target.textContent.length) {
+      position = this.target.textContent.length;
     }
     Cursor.setCurrentCursorPosition(position, this.target);
   }
@@ -263,7 +263,7 @@ class FocusEditorCore {
 
     /* FIX FOR FIREFOX */
     if (
-      current.innerText.trim() === "" &&
+      current.textContent.trim() === "" &&
       md2html.EMPTY_LINE_HTML_PLACEHOLDER &&
       helper.isFirefox()
     ) {
@@ -430,7 +430,7 @@ class FocusEditorCore {
     event.preventDefault();
     setTimeout(async () => {
       this.refresh();
-      let offset = this.target.innerText.length - this.#textLengthOnKeyDown + 2;
+      let offset = this.target.textContent.length - this.#textLengthOnKeyDown + 2;
 
       this.#restoreEditorCaretPosition({
         offset,
@@ -519,7 +519,7 @@ class FocusEditorCore {
 
     this.#storeEditorCaretPosition();
 
-    this.#textLengthOnKeyDown = this.target.innerText.length;
+    this.#textLengthOnKeyDown = this.target.textContent.length;
 
     if ((event.ctrlKey || event.metaKey) && event.key === "x") {
       if (
@@ -562,6 +562,7 @@ class FocusEditorCore {
 
     this.#checkPlaceholder();
 
+
     if (!document.fullscreenElement) {
       this.target.parentElement.classList.remove("zen-mode");
     }
@@ -591,22 +592,11 @@ class FocusEditorCore {
       return;
     }
 
-    if (helper.isFirefox() && !this.target.querySelector(".block")) {
-      /* Firefox Bug (1): When selecting all text and clean it, not div is there anymore */
-      /* eslint-disable no-unused-vars */
-      try {
-        Cursor.setCurrentCursorPosition(0, this.target.querySelector(".block"));
-      } catch (_) {
-        this.refresh();
-        return;
-      }
-    }
-
     if (
       helper.isFirefox() &&
-      this.target.innerText.trim() !== "" &&
+      this.target.textContent.trim() !== "" &&
       this.target.querySelectorAll(".block").length === 1 &&
-      this.target.querySelector(".block").innerText.trim() === ""
+      this.target.querySelector(".block").textContent.trim() === ""
     ) {
       /* Firefox Bug (2): When selecting all text and clean it, not div is there anymore */
       this.refresh();
@@ -620,7 +610,7 @@ class FocusEditorCore {
 
     if (!currentParagraph) {
       /**
-       * Firefox Bug (3): When selecting text and clean it, the text might be outside of any div
+       * Firefox Bug: When selecting text and clean it, the text might be outside of any div
        */
       if (helper.isFirefox()) {
         let divs = this.target.querySelectorAll("div:not(.block)");
@@ -655,7 +645,7 @@ class FocusEditorCore {
 
     this.#storeLastCaretPosition(helper.currentBlockWithCaret());
 
-    if (currentParagraph.innerText.trim() === "") {
+    if (currentParagraph.textContent.trim() === "") {
       /* BUG: browsers have problems with cursor position on empty paragraphs */
       return;
     }
@@ -682,7 +672,7 @@ class FocusEditorCore {
   static #activateElementWithClickFocusAndCaret(el) {
     el.click();
     el.focus();
-    Cursor.setCurrentCursorPosition(el.innerText.length, el);
+    Cursor.setCurrentCursorPosition(el.textContent.length, el);
   }
 
   #onHittingBackspace(event, current) {
@@ -741,13 +731,13 @@ class FocusEditorCore {
       return;
     }
 
-    if (cursorPosition < current.innerText.length) {
+    if (cursorPosition < current.textContent.length) {
       // split text
-      let text = current.innerText;
+      let text = current.textContent;
       textSplits[0] = text.substr(0, cursorPosition);
       textSplits[1] = text.substr(cursorPosition);
-      current.innerText = textSplits[0];
-      div.innerText = textSplits[1];
+      current.textContent = textSplits[0];
+      div.textContent = textSplits[1];
       textIsSplitAt = cursorPosition;
     }
     current.after(div);
@@ -842,7 +832,7 @@ class FocusEditorCore {
           new RegExp(previousElement.dataset.autocompletePattern.slice(1, -1)),
         )
       ) {
-        previousElement.innerText = "";
+        previousElement.textContent = "";
         delete previousElement.dataset.autocompletePattern;
         delete current.dataset.autocompletePattern;
         return;
@@ -952,7 +942,7 @@ class FocusEditorCore {
     }
 
     let last = this.target.querySelector(".block:last-child");
-    last.innerText += char;
+    last.textContent += char;
     md2html.addParagraphClasses([last], document);
   }
 }
