@@ -728,9 +728,7 @@ class FocusEditorCore {
       // timeout because: if the block is not fully visible yet the cursor may not be in the correct position
       setTimeout(() => {
         Cursor.setCurrentCursorPosition(
-          textIsSplitAt > 0
-            ? current.dataset.autocompletePattern?.length
-            : current.textContent.length,
+          textSplits[1]?.length > 0 ? current.textContent.length - textSplits[1].length : current.textContent.length,
           current,
         );
       }, 1);
@@ -800,20 +798,18 @@ class FocusEditorCore {
     const previousText = textSplits[0] || previousElement.textContent;
 
     const lineBeginsWithUnorderedList =
-      /^(\s*-\s+|\s*\*\s+|\s*•\s+|\s*\*\s+|\s*\+\s+|>+\s*)(.*)$/;
+      /^(\s*[-–*•+]\s+|>+\s*)(.*)$/;
     const lineBeginsWithOrderedList = /^(\s*)(\d+)(\.|\.\)|\))\s.+/;
 
     let matches = previousText.match(lineBeginsWithUnorderedList);
 
     if (matches && matches[1]) {
       let previousTextTrimmed = insertedElementText
-        .replace(lineBeginsWithUnorderedList, "")
+        .replace(lineBeginsWithUnorderedList, "" + (textSplits[1] || ''))
         .trim();
       current.textContent = matches[1] + previousTextTrimmed;
 
       if (
-        // previousAutocompletePattern &&
-        //new RegExp(previousAutocompletePattern.slice(1, -1)).test(previousText) &&
         previousText === matches[1]
       ) {
         current.textContent = previousTextTrimmed || "";
