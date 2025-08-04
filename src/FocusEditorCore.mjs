@@ -604,10 +604,12 @@ class FocusEditorCore {
         ? true
         : false;
 
-    if (helper.isFirefox() && window.getSelection().extentOffset === undefined) {
+    if (
+      helper.isFirefox() &&
+      window.getSelection().extentOffset === undefined
+    ) {
       textIsSelectedInBlock = window.getSelection().toString().length > 0;
     }
-
 
     if (textIsSelectedInBlock) {
       return;
@@ -719,7 +721,6 @@ class FocusEditorCore {
     const cursorPosition = Cursor.getCurrentCursorPosition(current);
 
     let previousElement = current.previousElementSibling;
-    let textIsSplitAt = 0;
     const textSplits = [];
 
     const setCursorToNewPositionAndUpdate = () => {
@@ -728,7 +729,9 @@ class FocusEditorCore {
       // timeout because: if the block is not fully visible yet the cursor may not be in the correct position
       setTimeout(() => {
         Cursor.setCurrentCursorPosition(
-          textSplits[1]?.length > 0 ? current.textContent.length - textSplits[1].length : current.textContent.length,
+          textSplits[1]?.length > 0
+            ? current.textContent.length - textSplits[1].length
+            : current.textContent.length,
           current,
         );
       }, 1);
@@ -757,7 +760,6 @@ class FocusEditorCore {
       textSplits[1] = text.substr(cursorPosition);
       current.textContent = textSplits[0];
       div.textContent = textSplits[1];
-      textIsSplitAt = cursorPosition;
     }
     current.after(div);
     if (
@@ -797,21 +799,18 @@ class FocusEditorCore {
     const insertedElementText = current.textContent;
     const previousText = textSplits[0] || previousElement.textContent;
 
-    const lineBeginsWithUnorderedList =
-      /^(\s*[-–*•+]\s+|>+\s*)(.*)$/;
+    const lineBeginsWithUnorderedList = /^(\s*[-–*•+]\s+|>+\s*)(.*)$/;
     const lineBeginsWithOrderedList = /^(\s*)(\d+)(\.|\.\)|\))\s.+/;
 
     let matches = previousText.match(lineBeginsWithUnorderedList);
 
     if (matches && matches[1]) {
       let previousTextTrimmed = insertedElementText
-        .replace(lineBeginsWithUnorderedList, "" + (textSplits[1] || ''))
+        .replace(lineBeginsWithUnorderedList, "" + (textSplits[1] || ""))
         .trim();
       current.textContent = matches[1] + previousTextTrimmed;
 
-      if (
-        previousText === matches[1]
-      ) {
+      if (previousText === matches[1]) {
         current.textContent = previousTextTrimmed || "";
         previousElement.textContent = "";
         this.#updateAllVisibleElements();
