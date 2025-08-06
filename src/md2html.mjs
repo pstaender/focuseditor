@@ -83,7 +83,7 @@ export function addCodeBlockClasses(elements, document) {
       }
 
       if (isCodeBlock) {
-        el.innerHTML = el.innerHTML.replace(/\s/g, "&nbsp;");
+        el.innerHTML = el.innerHTML.replace(/\s{2}/g, "&nbsp;&nbsp;");
 
         el.classList.add("code-block");
         if (el.innerHTML.match(/[<>]/)) {

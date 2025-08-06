@@ -37,7 +37,7 @@ it("#addCodeBlockClasses", ({ expect }) => {
   const div = document.createElement("div");
 
   div.innerHTML = md2html.innerTextToHtml(
-    "\n# Headline\n```md\n# test\n**bold**\n```\n",
+    "\n# Headline\n```md\n# test\n  * bullet-item\n**bold**\n```\n",
     document,
   );
   document.querySelector("body").append(div);
@@ -48,7 +48,8 @@ it("#addCodeBlockClasses", ({ expect }) => {
     <div class="block"><br></div>
     <div class="block"># Headline</div>
     <div class="block code-block-start code-block">\`\`\`md</div>
-    <div class="block code-block">#&nbsp;test</div>
+    <div class="block code-block"># test</div>
+    <div class="block code-block">&nbsp;&nbsp;* bullet-item</div>
     <div class="block code-block">**bold**</div>
     <div class="block code-block code-block-end">\`\`\`</div>
     <div class="block"><br></div>`),
@@ -75,7 +76,7 @@ it("#addParagraphClasses", ({ expect }) => {
       <div class="block">Some <strong>**text**</strong> with <em>*some*</em> different styles.</div>
       <div class="block"><br></div>
       <div class="block code-block-start code-block">\`\`\`md</div>
-      <div class="block code-block">#&nbsp;test</div>
+      <div class="block code-block"># test</div>
       <div class="block code-block">**bold**</div>
       <div class="block code-block code-block-end">\`\`\`</div>
       `),

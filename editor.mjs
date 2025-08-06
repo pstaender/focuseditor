@@ -51,7 +51,7 @@ window.setFilename = (filename) => {
   document.getElementById("filename").dispatchEvent(new Event("change"));
 };
 
-function removeWordWrap(text, maxLength = null, autodetect = false) {
+function removeWordWrap(text, maxLength = null) {
   if (!maxLength) {
     // detect max length
     maxLength = text
@@ -75,7 +75,7 @@ function removeWordWrap(text, maxLength = null, autodetect = false) {
     }
     if (
       l.trimEnd().length > Math.floor(maxLength / 2) &&
-      !/[\?\!|.]$/.test(l.trimEnd()) &&
+      !/[?!|.]$/.test(l.trimEnd()) &&
       !/^\s+/.test(l)
     ) {
       clearedText.push(l.trimEnd());

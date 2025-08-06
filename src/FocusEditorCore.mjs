@@ -418,12 +418,12 @@ class FocusEditorCore {
   }
 
   #onPaste(event) {
-    let paste = (event.clipboardData || window.clipboardData).getData("text");
+    let pasteText = (event.clipboardData || window.clipboardData).getData("text");
 
     const selection = window.getSelection();
     if (!selection.rangeCount) return false;
     selection.deleteFromDocument();
-    selection.getRangeAt(0).insertNode(document.createTextNode(paste));
+    selection.getRangeAt(0).insertNode(document.createTextNode(pasteText));
     this.#textUndo.add(this.getMarkdown());
     this.#dispatchInputEvent();
 
@@ -872,6 +872,10 @@ class FocusEditorCore {
     let caretPosition =
       this.#textUndo.previous()?.additionalData?.caretPosition;
 
+    if (caretPosition) {
+      caretPosition = caretPosition + 2;
+    }
+
     this.replaceText(text, { dontAddToHistory: true });
     this.#dispatchInputEvent();
     setTimeout(() => {
@@ -907,7 +911,7 @@ class FocusEditorCore {
     setTimeout(() => {
       // restore caret
       Cursor.setCurrentCursorPosition(
-        additionalData.caretPosition,
+        additionalData.caretPosition + 2,
         this.target,
       );
       this.#scrollCurrentParagraphIntoView();

@@ -1,6 +1,6 @@
 {
   "name": "browser-focus-editor",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "focus editor for the focused editor",
   "license": "AGPL-3.0-only",
   "author": "Philipp Staender <pstaender@mailbox.org>",
@@ -23,6 +23,7 @@
     "globals": "^16.3.0",
     "http-server": "^14.1.1",
     "jsdoc": "^4.0.4",
+    "jsdom": "^26.1.0",
     "postcss": "^8.5.6",
     "postcss-cli": "^11.0.1",
     "tidy-jsdoc": "^1.4.1",
@@ -31,8 +32,5 @@
   },
   "browserslist": [
     "defaults"
-  ],
-  "dependencies": {
-    "jsdom": "^26.1.0"
-  }
+  ]
 }
