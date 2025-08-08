@@ -67,7 +67,7 @@ export function textareasAsFocusEditor(selector = "textarea") {
       fe.setAttribute(attr.name, textarea.getAttribute(attr.name));
     }
     fe.classList.add("textarea");
-    textarea.replaceWith(fe);
+    fe.after(textarea);
   });
 }
 

@@ -1,5 +1,5 @@
-@import url("src/css/FocusEditor.css?{{LAST_GIT_COMMIT_HASH}}");
-@import url("src/css/themes/plex-mono/plex-mono.css?{{LAST_GIT_COMMIT_HASH}}");
+@import url("../src/css/FocusEditor.css?{{LAST_GIT_COMMIT_HASH}}");
+@import url("../src/css/themes/plex-mono/plex-mono.css?{{LAST_GIT_COMMIT_HASH}}");
 
 :root {
   --nav-height: 3rem;
@@ -81,7 +81,7 @@ nav:has(+ #toggle-menu-button #toggle-menu:checked) {
   padding: 0.5rem 1rem;
   text-align: center;
   transition: opacity 0.2s ease-in-out;
-  &:hover {
+  &:hover, &:focus-within {
     opacity: 1;
   }
   input {

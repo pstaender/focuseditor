@@ -1,5 +1,5 @@
-import { init } from "./src/FocusEditor.mjs?{{LAST_GIT_COMMIT_HASH}}";
-import Cursor from "./src/Cursor.mjs?{{LAST_GIT_COMMIT_HASH}}";
+import { init } from "../src/FocusEditor.mjs?{{LAST_GIT_COMMIT_HASH}}";
+import Cursor from "../src/Cursor.mjs?{{LAST_GIT_COMMIT_HASH}}";
 
 init();
 
