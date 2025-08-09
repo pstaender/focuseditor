@@ -17,7 +17,7 @@
       type="module"
     ></script>
   </head>
-  <body class="menu-at-the-top">
+  <body>
     <main>
       <div id="filename-holder">
         <input
@@ -55,32 +55,41 @@
             </button>
           </li>
           <li>
-            <label for="remember">persist</label>
+            <hr />
+          </li>
+          <li>
+            <label for="remember">Persist Editor</label>
             <input type="checkbox" id="remember" />
           </li>
           <li>
-            <label for="hyphens">hyphens</label>
+            <label for="hyphens">Hyphens</label>
             <input type="checkbox" id="hyphens" />
           </li>
           <li>
-            <label for="word-wrap">auto-wrap imports</label>
+            <label for="word-wrap">Auto-Wrap Imports</label>
             <input type="checkbox" id="word-wrap" />
           </li>
           <li>
-            <label for="image-preview">image preview</label>
+            <label for="image-preview">Show Image Preview</label>
             <input type="checkbox" id="image-preview" />
           </li>
           <li>
-            <label for="highlight-current-paragraph"
-              >highlight current paragraph</label
-            >
+            <label for="highlight-current-paragraph">Highlight Current Paragraph</label>
             <input type="checkbox" id="highlight-current-paragraph" />
+          </li>
+          <li>
+            <label for="show-filename">Show Filename</label>
+            <input type="checkbox" id="show-filename" />
           </li>
         </ul>
       </nav>
       <div id="toggle-menu-button">
         <input type="checkbox" id="toggle-menu" name="toggle-menu" />
-        <label for="toggle-menu">Show/Hide Menu</label>
+        <label for="toggle-menu" aria-label="Show / Hide Menu">
+          <img
+            src="data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2048%2048'%3e%3cg%20transform='matrix(2,0,0,2,0,0)'%3e%3cdefs%3e%3cstyle%3e.a{fill:%23000000}%3c/style%3e%3c/defs%3e%3ccircle%20class='a'%20cx='5'%20cy='12'%20r='2'%3e%3c/circle%3e%3ccircle%20class='a'%20cx='12'%20cy='12'%20r='2'%3e%3c/circle%3e%3ccircle%20class='a'%20cx='19'%20cy='12'%20r='2'%3e%3c/circle%3e%3c/g%3e%3c/svg%3e"
+          />
+        </label>
       </div>
     </main>
   </body>

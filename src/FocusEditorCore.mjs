@@ -431,7 +431,7 @@ class FocusEditorCore {
     setTimeout(async () => {
       this.refresh();
       let offset =
-        this.target.textContent.length - this.#textLengthOnKeyDown + 2;
+        this.target.textContent.length - this.#textLengthOnKeyDown;
 
       this.#restoreEditorCaretPosition({
         offset,

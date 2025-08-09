@@ -160,9 +160,16 @@ window.save = function () {
   URL.revokeObjectURL(url);
 };
 
+document.querySelector('focus-editor, nav button, nav input').addEventListener('click', () => {
+  document.getElementById('toggle-menu').checked = false;
+});
+
 document
   .querySelectorAll('main input[type="checkbox"][id]')
   .forEach((input) => {
+    if (input.id === 'toggle-menu') {
+      return;
+    }
     input.checked =
       localStorage.getItem(`${localStorageKey}-${input.id}`) === "true";
     input.addEventListener("change", () => {
@@ -192,6 +199,13 @@ document
           focusEditor.classList.add("highlight-current-paragraph");
         } else {
           focusEditor.classList.remove("highlight-current-paragraph");
+        }
+      }
+      if (input.id === "show-filename") {
+        if (input.checked) {
+          document.querySelector('body').classList.add('show-filename');
+        } else {
+          document.querySelector('body').classList.remove('show-filename');
         }
       }
       localStorage.setItem(`${localStorageKey}-${input.id}`, input.checked);
