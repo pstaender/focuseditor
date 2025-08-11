@@ -2,14 +2,10 @@ import FocusEditorWebComponent from "./FocusEditorWebComponent.mjs";
 import FocusEditorCore from "./FocusEditorCore.mjs";
 
 export function registerFocusEditorWebComponent() {
-  try {
+  if (!customElements.get('focus-editor')) {
     customElements.define("focus-editor", FocusEditorWebComponent);
-  } catch (error) {
-    if (error.name === "NotSupportedError") {
-      console.error(error);
-    } else {
-      throw error;
-    }
+  } else {
+    console.warn("element 'focus-editor' is already defined");
   }
 }
 

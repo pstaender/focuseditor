@@ -58,6 +58,8 @@ class FocusEditorWebComponent extends HTMLElement {
       ) {
         this.setAttribute("id", this.firstElementChild.getAttribute("id"));
       }
+
+      this.#syncValueForTextareaElementDebounced();
     }
 
     this.innerText = "";
@@ -82,19 +84,18 @@ class FocusEditorWebComponent extends HTMLElement {
     this.addEventListener("keyup", () =>
       this.#syncValueForTextareaElementDebounced(),
     );
-
   }
 
   #syncValueForTextareaElement = (inputName = this.getAttribute("name")) => {
-    if (!inputName) {
-      return;
-    }
-    let textArea = this.querySelector(`textarea[name="${inputName}"]`);
+    let textArea = null;
     if (!textArea) {
       textArea = document.createElement("textarea");
       textArea.name = inputName;
-      textArea.style.display = "none";
       this.appendChild(textArea);
+    }
+    if (textArea.placeholder) {
+      this.setAttribute('placeholder', textArea.placeholder);
+      this.editor.placeholder = textArea.placeholder;
     }
     textArea.innerText = this.value;
   };
@@ -126,7 +127,6 @@ class FocusEditorWebComponent extends HTMLElement {
       this.#syncValueForTextareaElement(newValue);
     }
   }
-
 }
 
 export default FocusEditorWebComponent;

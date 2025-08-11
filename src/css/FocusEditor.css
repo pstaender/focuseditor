@@ -301,6 +301,9 @@ focus-editor.textarea {
     min-height: 3.5em;
     outline: none;
   }
+  > textarea {
+    display: none;
+  }
 }
 
 focus-editor[focus="paragraph"] {
@@ -390,7 +393,7 @@ focus-editor {
   .block[data-placeholder] + .block[data-placeholder]:before {
     display: none;
   }
-  /* visual fix for safari: sometimes a br is insert before placeholder */
+  /* visual fix for safari: sometimes one br is inserted before placeholder */
   br:has(~ .block[data-placeholder]) {
     display: none;
   }
@@ -398,7 +401,6 @@ focus-editor {
 focus-editor[image-preview] {
   .link.image {
     span {
-      /* display: inline-block; */
       &:after {
         --transition-duration: 0.7s;
         content: "";
