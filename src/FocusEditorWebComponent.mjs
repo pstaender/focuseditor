@@ -87,7 +87,10 @@ class FocusEditorWebComponent extends HTMLElement {
   }
 
   #syncValueForTextareaElement = (inputName = this.getAttribute("name")) => {
-    let textArea = null;
+    if (!inputName) {
+      return;
+    }
+    let textArea = this.querySelector(`textarea[name="${inputName}"]`);
     if (!textArea) {
       textArea = document.createElement("textarea");
       textArea.name = inputName;
