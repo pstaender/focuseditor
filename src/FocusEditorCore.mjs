@@ -114,6 +114,7 @@ class FocusEditorCore {
     if (!dontAddToHistory) {
       this.#textUndo.add(this.getMarkdown());
     }
+    this.#dispatchChangeEvent();
   }
 
   /**
@@ -121,6 +122,13 @@ class FocusEditorCore {
    */
   allChildren() {
     return this.target.querySelectorAll(":scope > *");
+  }
+
+  #dispatchChangeEvent() {
+    this.target.dispatchEvent(new CustomEvent("change", {
+      bubbles: true,
+      detail: { text: () => this.getMarkdown() },
+    }));
   }
 
   #visibleChildren() {
@@ -436,6 +444,7 @@ class FocusEditorCore {
       this.#restoreEditorCaretPosition({
         offset,
       });
+      this.#dispatchChangeEvent();
     }, 1);
   }
 
@@ -461,6 +470,7 @@ class FocusEditorCore {
       }
     }
     this.#checkPlaceholder();
+    this.#dispatchChangeEvent();
   }
 
   #onClick(event) {
@@ -878,6 +888,7 @@ class FocusEditorCore {
 
     this.replaceText(text, { dontAddToHistory: true });
     this.#dispatchInputEvent();
+    this.#dispatchChangeEvent();
     setTimeout(() => {
       // restore caret
       if (caretPosition === undefined) {
@@ -908,6 +919,7 @@ class FocusEditorCore {
     }
     this.replaceText(text, { dontAddToHistory: true });
     this.#dispatchInputEvent();
+    this.#dispatchChangeEvent();
     setTimeout(() => {
       // restore caret
       Cursor.setCurrentCursorPosition(
