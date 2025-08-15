@@ -9,8 +9,6 @@
 import * as helper from "./helper.mjs";
 
 export const EMPTY_LINE_HTML_PLACEHOLDER = `<br>`;
-const HTTP_HTTPS_URL_REGEX =
-  /(https?:\/\/)(www\.)?([-a-zA-Z0-9@:%._+~#=/;?&]{1,256})(.{0,1})/;
 
 export function innerTextToHtml(text, document) {
   text = text.replace(/\r/g, "\n");
@@ -113,8 +111,6 @@ function inlineMarkdown(text) {
 
   let html = helper.escapeHTMLEntities(text);
 
-  const transformUrlsToLinks = false; /* buggy */
-
   // find bold+italic
   html = html
     .replace(/([*\\]*)(\*{3}[^\s*]+.*?\*{3})([*]*)/g, (...matches) => {
@@ -176,32 +172,6 @@ function inlineMarkdown(text) {
     let url = helper.stripHtml(matches[3].split(/\s+/)[0]);
     return `<a href="${url}" style="--url: url(${url})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${url})</span></a>`;
   });
-
-  if (transformUrlsToLinks) {
-    html = html.replace(HTTP_HTTPS_URL_REGEX, (...matches) => {
-      let url = helper.htmlToText(
-        matches[1] + (matches[2] || "") + (matches[3] || ""),
-      );
-      if (matches[4] && matches[4].trim() !== "") {
-        // no action
-        return matches[0];
-      }
-      let unescapedMatches = url.match(HTTP_HTTPS_URL_REGEX);
-      if (unescapedMatches) {
-        let completeUrl =
-          unescapedMatches[1] +
-          (unescapedMatches[2] || "") +
-          (unescapedMatches[3] + "");
-        let a = document.createElement("A");
-        a.href = completeUrl;
-        a.classList.add("link", "inline");
-        a.textContent = completeUrl;
-        return `${a.outerHTML}${unescapedMatches[4] || ""}`;
-      }
-
-      return matches[0];
-    });
-  }
 
   return html;
 }

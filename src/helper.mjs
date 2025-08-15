@@ -36,12 +36,7 @@ export function currentBlockWithCaret() {
 
 export function elementIsVisible(
   el,
-  {
-    offsetTop = 0,
-    offsetBottom = 0,
-    offsetLeft = 0,
-    offsetRight = 0,
-  } = {},
+  { offsetTop = 0, offsetBottom = 0, offsetLeft = 0, offsetRight = 0 } = {},
 ) {
   const rect = el.getBoundingClientRect();
   return (
@@ -57,7 +52,11 @@ export function elementIsVisible(
 
 export function isElementVisible(element, container = null) {
   if (!container) {
-     return !!( element.offsetWidth || element.offsetHeight || element.getClientRects().length );
+    return !!(
+      element.offsetWidth ||
+      element.offsetHeight ||
+      element.getClientRects().length
+    );
   }
   const elRect = element.getBoundingClientRect();
   const conRect = container.getBoundingClientRect();
@@ -167,4 +166,68 @@ export function slugify(str) {
     .replace(/-+/g, "-"); // collapse dashes
 
   return str;
+}
+
+export function replaceHttpUrlsWithLinks(children, document, window) {
+  children.forEach((e) => {
+    const HTTP_HTTPS_URL_REGEX =
+      /(https?:\/\/)(www\.)?([-a-zA-Z0-9@:%._+~#=/;?&]{1,256})(.{0,1})/;
+
+    function replaceLinksInHTML(text) {
+      return text.replace(HTTP_HTTPS_URL_REGEX, (...matches) => {
+        let url = htmlToText(
+          matches[1] + (matches[2] || "") + (matches[3] || ""),
+        );
+        if (matches[4] && matches[4].trim() !== "") {
+          // no action
+          return matches[0];
+        }
+        let unescapedMatches = url.match(HTTP_HTTPS_URL_REGEX);
+        if (unescapedMatches) {
+          let completeUrl =
+            unescapedMatches[1] +
+            (unescapedMatches[2] || "") +
+            (unescapedMatches[3] + "");
+          let a = document.createElement("A");
+          a.href = completeUrl;
+          a.classList.add("link", "inline");
+          a.textContent = completeUrl;
+          return `${a.outerHTML}${matches[4] || ""}`;
+        }
+        return matches[0];
+      });
+    }
+
+    function replaceLinks(element) {
+      if (element.childNodes) {
+        for (let e of element.childNodes) {
+          replaceLinks(e);
+        }
+      }
+      if (element.nodeType === Node.TEXT_NODE) {
+        if (element.parentElement) {
+          if (
+            element.parentElement.tag !== "DIV" &&
+            !element.parentElement.classList.contains("block")
+          ) {
+            return; // do not replace links in spans or anchors
+          }
+        }
+        if (
+          element.textContent &&
+          element.textContent.match(HTTP_HTTPS_URL_REGEX)
+        ) {
+          const newHtml = replaceLinksInHTML(element.textContent);
+
+          if (newHtml !== element.textContent) {
+            const newElement = document.createElement("span");
+            newElement.innerHTML = newHtml;
+            element.replaceWith(...newElement.childNodes);
+          }
+        }
+      }
+    }
+
+    replaceLinks(e);
+  });
 }

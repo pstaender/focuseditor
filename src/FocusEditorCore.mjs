@@ -135,9 +135,10 @@ class FocusEditorCore {
   }
 
   /**
-   * (Re)renders markdown.
+   * (Re)renders markdown
    * Can be helpful if not all elements are updated correctly.
    * Triggering refresh may change the caret position as well.
+   * @deprecated use `refresh()` instead.
    */
   fullRefresh() {
     let cursor = Cursor.getCurrentCursorPosition(this.target);
@@ -199,24 +200,29 @@ class FocusEditorCore {
         },
       }),
     );
-    if (this.target.parentElement.hasAttribute('prevent-dblclick-visit-on-links')) {
+    if (
+      this.target.parentElement.hasAttribute("prevent-dblclick-visit-on-links")
+    ) {
       return;
     }
+    helper.replaceHttpUrlsWithLinks(children, document, window);
     children.forEach((e) =>
-      e.querySelectorAll("a.link[href]:not(.prevent-dblclick-visit)").forEach((el) => {
-        el.addEventListener("dblclick", (ev) => {
-          if (
-            ev.metaKey ||
-            ev.altKey ||
-            /^http[s]*:\/\//i.test(el.getAttribute("href"))
-          ) {
-            // open in new tab
-            window.open(el.href, "_blank");
-          } else {
-            window.location.href = el.href;
-          }
-        });
-      }),
+      e
+        .querySelectorAll("a.link[href]:not(.prevent-dblclick-visit)")
+        .forEach((el) => {
+          el.addEventListener("dblclick", (ev) => {
+            if (
+              ev.metaKey ||
+              ev.altKey ||
+              /^http[s]*:\/\//i.test(el.getAttribute("href"))
+            ) {
+              // open in new tab
+              window.open(el.href, "_blank");
+            } else {
+              window.location.href = el.href;
+            }
+          });
+        }),
     );
   }
 
@@ -466,7 +472,7 @@ class FocusEditorCore {
 
     event.preventDefault();
     setTimeout(async () => {
-      this.fullRefresh();
+      this.refresh();
       let offset = this.target.textContent.length - this.#textLengthOnKeyDown;
 
       this.#restoreEditorCaretPosition({
@@ -658,7 +664,7 @@ class FocusEditorCore {
       this.target.querySelector(".block").textContent.trim() === ""
     ) {
       /* Firefox Bug (2): When selecting all text and clean it, not div is there anymore */
-      this.fullRefresh();
+      this.refresh();
       Cursor.setCurrentCursorPosition(
         this.target.textContent.length,
         this.target.querySelector(".block"),
@@ -699,6 +705,19 @@ class FocusEditorCore {
         }
       }
       console.warn("… no element with current caret…");
+      /*
+        If text is removed, sometime the .block div get removed as well and the browser adds a <br> between blocks.
+        This fixes this issue by replacing the <br> with a div.
+      */
+      if (helper.currentElementWithCaret() === this.target) {
+        let br = this.target.querySelector(':scope > br');
+        if (br) {
+          let div = document.createElement("div");
+          div.classList.add("block");
+          div.innerHTML = md2html.EMPTY_LINE_HTML_PLACEHOLDER;
+          br.replaceWith(div);
+        }
+      }
       return;
     }
 
