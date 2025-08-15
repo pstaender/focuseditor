@@ -274,20 +274,6 @@ export function addParagraphClasses(elements, document) {
     if (el.textContent.trim() === "" && EMPTY_LINE_HTML_PLACEHOLDER) {
       el.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
     }
-    el.querySelectorAll("a.link[href]").forEach((el) => {
-      el.addEventListener("dblclick", (ev) => {
-        if (
-          ev.metaKey ||
-          ev.altKey ||
-          /^http[s]*:\/\//i.test(el.getAttribute("href"))
-        ) {
-          // open in new tab
-          window.open(el.href, "_blank");
-        } else {
-          window.location.href = el.href;
-        }
-      });
-    });
 
     if (el.textContent.trim() === '') {
       el.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
