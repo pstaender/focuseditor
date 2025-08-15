@@ -205,7 +205,7 @@ class FocusEditorCore {
     ) {
       return;
     }
-    helper.replaceHttpUrlsWithLinks(children, document, window);
+    helper.replaceHttpUrlsWithLinks(children, document);
     children.forEach((e) =>
       e
         .querySelectorAll("a.link[href]:not(.prevent-dblclick-visit)")

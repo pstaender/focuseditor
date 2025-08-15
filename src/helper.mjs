@@ -168,7 +168,7 @@ export function slugify(str) {
   return str;
 }
 
-export function replaceHttpUrlsWithLinks(children, document, window) {
+export function replaceHttpUrlsWithLinks(children, document) {
   children.forEach((e) => {
     const HTTP_HTTPS_URL_REGEX =
       /(https?:\/\/)(www\.)?([-a-zA-Z0-9@:%._+~#=/;?&]{1,256})(.{0,1})/;
