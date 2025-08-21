@@ -178,6 +178,9 @@ export function replaceHttpUrlsWithLinks(children, document) {
         if (matches[1] === "'" || matches[1] === `"`) {
           return matches[0];
         }
+        if (!/^\s+$/.test(matches[1]) && matches[1] !== '') {
+          return matches[0];
+        }
 
         let url = htmlToText(
           matches[2] + (matches[3] || "") + (matches[4] || ""),
@@ -196,7 +199,7 @@ export function replaceHttpUrlsWithLinks(children, document) {
           a.href = completeUrl;
           a.classList.add("link", "inline");
           a.textContent = completeUrl;
-          return `${a.outerHTML}${matches[5] || ""}`;
+          return `${matches[1]}${a.outerHTML}${matches[5] || ""}`;
         }
         return matches[0];
       });

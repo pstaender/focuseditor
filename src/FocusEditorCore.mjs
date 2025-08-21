@@ -16,6 +16,7 @@ class FocusEditorCore {
   #textUndo = new UndoText();
   #scrollIntoViewOptions = { block: "center" };
   #target = null;
+  #replaceHttpUrlsWithLinks = false;
 
   #keyboardShortcuts = {
     refresh: {
@@ -205,7 +206,9 @@ class FocusEditorCore {
     ) {
       return;
     }
-    helper.replaceHttpUrlsWithLinks(children, document);
+    if (this.#replaceHttpUrlsWithLinks) {
+      helper.replaceHttpUrlsWithLinks(children, document);
+    }
     children.forEach((e) =>
       e
         .querySelectorAll("a.link[href]:not(.prevent-dblclick-visit)")
@@ -367,6 +370,15 @@ class FocusEditorCore {
 
   get target() {
     return this.#target;
+  }
+
+  /**
+   * Replaces all http(s) urls with links
+   * This is very experimental and may not work as expected, keep it for now ;)
+   * @param {boolean} val
+   */
+  set replaceHttpUrlsWithLinks(val) {
+    this.#replaceHttpUrlsWithLinks = !!val;
   }
 
   #customTabBehaviour(event) {
