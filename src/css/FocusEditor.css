@@ -15,6 +15,9 @@ focus-editor {
   );
   --color-grey: light-dark(rgba(175, 175, 175, 1), rgba(255, 255, 255, 0.5));
   --color-grey-lighter: #ccc;
+  --color-text: var(--color-text, light-dark(#000, #fff));
+  --color-background: var(--color-background, light-dark(#fff, #202020));
+
   --transition-duration: 0s;
   &.smooth-transition {
     --transition-duration: 0.2s;
@@ -69,8 +72,8 @@ focus-editor {
   );
   font-size: var(--font-size, 1rem);
 
-  color: var(--color-text, light-dark(#000, #fff));
-  background-color: var(--color-background, light-dark(#fff, #202020));
+  color: var(--color-text);
+  background-color: var(--color-background);
 
   @media (hover) {
     .focus-editor[contenteditable="true"]:hover {
@@ -228,7 +231,7 @@ focus-editor {
       color: transparent;
       &:focus,
       &.with-caret {
-        color: var(--color-grey-lighter);
+        color: var(--color-text);
       }
       &:before {
         content: "";

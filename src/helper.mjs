@@ -171,28 +171,32 @@ export function slugify(str) {
 export function replaceHttpUrlsWithLinks(children, document) {
   children.forEach((e) => {
     const HTTP_HTTPS_URL_REGEX =
-      /(https?:\/\/)(www\.)?([-a-zA-Z0-9@:%._+~#=/;?&]{1,256})(.{0,1})/;
+      /(.{0,1})(https?:\/\/)(www\.)?([-a-zA-Z0-9@:%._+~#=/;?&]{1,256})(.{0,1})/;
 
     function replaceLinksInHTML(text) {
       return text.replace(HTTP_HTTPS_URL_REGEX, (...matches) => {
+        if (matches[1] === "'" || matches[1] === `"`) {
+          return matches[0];
+        }
+
         let url = htmlToText(
-          matches[1] + (matches[2] || "") + (matches[3] || ""),
+          matches[2] + (matches[3] || "") + (matches[4] || ""),
         );
-        if (matches[4] && matches[4].trim() !== "") {
+        if (matches[5] && matches[5].trim() !== "") {
           // no action
           return matches[0];
         }
         let unescapedMatches = url.match(HTTP_HTTPS_URL_REGEX);
         if (unescapedMatches) {
           let completeUrl =
-            unescapedMatches[1] +
-            (unescapedMatches[2] || "") +
-            (unescapedMatches[3] + "");
+            unescapedMatches[2] +
+            (unescapedMatches[3] || "") +
+            (unescapedMatches[4] + "");
           let a = document.createElement("A");
           a.href = completeUrl;
           a.classList.add("link", "inline");
           a.textContent = completeUrl;
-          return `${a.outerHTML}${matches[4] || ""}`;
+          return `${a.outerHTML}${matches[5] || ""}`;
         }
         return matches[0];
       });
