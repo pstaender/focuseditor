@@ -162,6 +162,24 @@ class FocusEditorCore {
   }
 
   refresh() {
+    let blockWithCaret = this.target.querySelector(".block.with-caret");
+    if (/\n/g.test(blockWithCaret?.innerText?.trim())) {
+      // todo: split;
+      const lines = blockWithCaret.innerText.split(/\n/g);
+      lines.forEach((text, i) => {
+        if (text.trim() === "") {
+          text = ' ';
+        }
+        let div = document.createElement("div");
+        div.classList.add("block");
+        div.textContent = text;
+        if (i === lines.length - 1) {
+          blockWithCaret.innerText = text;
+        } else {
+          blockWithCaret.before(div);
+        }
+      });
+    }
     this.#updateChildrenElementsWithMarkdownClasses();
   }
 
