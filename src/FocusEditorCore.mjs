@@ -165,7 +165,6 @@ class FocusEditorCore {
   refresh() {
     let blockWithCaret = this.target.querySelector(".block.with-caret");
     if (/\n/g.test(blockWithCaret?.innerText?.trim())) {
-      // todo: split;
       const lines = blockWithCaret.innerText.split(/\n/g);
       lines.forEach((text, i) => {
         if (text.trim() === "") {
