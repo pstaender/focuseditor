@@ -22,10 +22,8 @@ export default class UndoText {
     const cutOff = this.#position < this.#undos.length - 1;
     let previousText = this.previous() ? this.previous().text : this.#previousText;
     if (cutOff) {
-      // console.log(this.#position < this.#undos.length - 1, this.#previousText);
       this.#undos = this.#undos.splice(0, this.#position + 1);
       previousText = this.#currentText;
-      // console.log('Cut off', this.#undos, { text, previousText })
     }
 
     if (previousText) {

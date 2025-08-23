@@ -17,6 +17,7 @@ class FocusEditorCore {
   #scrollIntoViewOptions = { block: "center" };
   #target = null;
   #replaceHttpUrlsWithLinks = false;
+  #renderMarkdownTables = false;
 
   #keyboardShortcuts = {
     refresh: {
@@ -162,6 +163,23 @@ class FocusEditorCore {
   }
 
   refresh() {
+    let blockWithCaret = this.target.querySelector(".block.with-caret");
+    if (/\n/g.test(blockWithCaret?.innerText?.trim())) {
+      const lines = blockWithCaret.innerText.split(/\n/g);
+      lines.forEach((text, i) => {
+        if (text.trim() === "") {
+          text = ' ';
+        }
+        let div = document.createElement("div");
+        div.classList.add("block");
+        div.textContent = text;
+        if (i === lines.length - 1) {
+          blockWithCaret.innerText = text;
+        } else {
+          blockWithCaret.before(div);
+        }
+      });
+    }
     this.#updateChildrenElementsWithMarkdownClasses();
   }
 
@@ -208,6 +226,9 @@ class FocusEditorCore {
     }
     if (this.#replaceHttpUrlsWithLinks) {
       helper.replaceHttpUrlsWithLinks(children, document);
+    }
+    if (this.#renderMarkdownTables) {
+      md2html.convertElementsWithMarkdownTablesToVisualTables(children);
     }
     children.forEach((e) =>
       e
@@ -366,6 +387,10 @@ class FocusEditorCore {
     this.#target.parentElement.addEventListener("scroll", (ev) =>
       this.#onScroll(ev, this),
     );
+  }
+
+  set renderMarkdownTables(value) {
+    this.#renderMarkdownTables = value;
   }
 
   get target() {

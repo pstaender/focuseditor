@@ -458,3 +458,65 @@ focus-editor.highlight-current-paragraph .focus-editor {
     }
   }
 }
+
+focus-editor {
+  --table-border-thickness: 3px;
+  .block {
+    .table span {
+      position: relative;
+      &:first-child:before {
+        content: "";
+        position: absolute;
+        left: 3px;
+        top: -.55em;
+        height: calc(100% + 1em);
+        width: var(--table-border-thickness);
+        background: var(--color-grey-lighter);
+      }
+      &:after {
+        content: "";
+        position: absolute;
+        right: 3px;
+        top: -.55em;
+        height: calc(100% + 1em);
+        width: var(--table-border-thickness);
+        background: var(--color-grey-lighter);
+      }
+    }
+  }
+  .table-header-text.table-with-extra-class {
+    span:last-child {
+      display: none;
+    }
+  }
+  .table-header-text {
+    font-weight: bold;
+
+  }
+  .table-header-separator {
+    position: relative;
+    display: inline-block;
+    opacity: 0.2;
+    &:before {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: calc(50%);
+      height: 3px;
+      width: calc(100% - 6px);
+      background: currentColor;
+
+    }
+    span:before {
+      background: currentColor !important;
+      top: 0 !important;
+      height: calc(100%) !important;
+    }
+    span:after {
+      background: currentColor !important;
+      top: 0 !important;
+      height: calc(100%) !important;
+    }
+  }
+
+}
