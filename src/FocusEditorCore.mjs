@@ -17,6 +17,7 @@ class FocusEditorCore {
   #scrollIntoViewOptions = { block: "center" };
   #target = null;
   #replaceHttpUrlsWithLinks = false;
+  #renderMarkdownTables = false;
 
   #keyboardShortcuts = {
     refresh: {
@@ -227,6 +228,9 @@ class FocusEditorCore {
     if (this.#replaceHttpUrlsWithLinks) {
       helper.replaceHttpUrlsWithLinks(children, document);
     }
+    if (this.#renderMarkdownTables) {
+      md2html.convertElementsWithMarkdownTablesToVisualTables(children);
+    }
     children.forEach((e) =>
       e
         .querySelectorAll("a.link[href]:not(.prevent-dblclick-visit)")
@@ -384,6 +388,10 @@ class FocusEditorCore {
     this.#target.parentElement.addEventListener("scroll", (ev) =>
       this.#onScroll(ev, this),
     );
+  }
+
+  set renderMarkdownTables(value) {
+    this.#renderMarkdownTables = value;
   }
 
   get target() {

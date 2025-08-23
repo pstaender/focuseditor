@@ -245,9 +245,71 @@ export function addParagraphClasses(elements, document) {
       el.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
     }
 
-    if (el.textContent.trim() === '') {
+    if (el.textContent.trim() === "") {
       el.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
     }
   });
   return;
+}
+
+export function convertElementsWithMarkdownTablesToVisualTables(elements) {
+  let tableRows = [];
+
+  function columnsToVisualTable(columns) {
+    const ul = document.createElement("div");
+    columns.forEach((row, i) => {
+      const li = document.createElement("span");
+      li.innerHTML = (i === 0 ? "|" : "") + row + "|";
+      ul.appendChild(li);
+    });
+    return ul;
+  }
+
+  elements.forEach((el, i) => {
+    if (tableRows.length === 0) {
+      if (!/^\|.+?\|$/.test(el.innerText.trim())) {
+        return;
+      }
+      if (
+        /^\|.+?\|/.test(el.innerText.trim()) &&
+        elements[i + 1] &&
+        /^\|\s*:*[-]+:*\s*\|/.test(elements[i + 1].innerText.trim())
+      ) {
+        // table header found
+        let columns = el.innerText.split(/\|/);
+        let tableExtraCssClass = null;
+        if (columns.at(-2).startsWith(".")) {
+          tableExtraCssClass = columns.at(-2).replace(/^\./, "").trim();
+        }
+        columns = columns.slice(1, -1);
+        const table = columnsToVisualTable(columns);
+        table.classList.add("table-header-text");
+        table.classList.add("table");
+        if (tableExtraCssClass) {
+          table.classList.add('table-with-extra-class');
+          table.classList.add(`table-${tableExtraCssClass}`);
+        }
+        el.innerHTML = "";
+        el.append(table);
+        tableRows.push(columns);
+      }
+    } else if (/^\|.+?\|$/.test(el.innerText.trim())) {
+      const columns = columnsToVisualTable(el.innerText.split(/\|/).slice(1, -1));
+      if (tableRows.length === 1) {
+        columns.classList.add("table-header-separator");
+        columns.classList.add("table");
+      } else {
+        columns.classList.add("table-row");
+        columns.classList.add("table")
+      }
+      el.innerHTML = "";
+      el.append(columns);
+
+      tableRows.push(
+        columns
+      );
+    } else {
+      tableRows = [];
+    }
+  });
 }
