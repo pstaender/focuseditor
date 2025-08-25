@@ -963,7 +963,7 @@ class FocusEditorCore {
 
     const previousAutocompletePattern =
       previousElement.dataset?.autocompletePattern || "";
-    const insertedElementText = current.textContent;
+    let insertedElementText = current.textContent;
     const previousText = textSplits[0] || previousElement.textContent;
 
     const lineBeginsWithUnorderedList = /^(\s*[-–*•+]\s+|>+\s*)(.*)$/;
@@ -971,12 +971,23 @@ class FocusEditorCore {
 
     let matches = previousText.match(lineBeginsWithUnorderedList);
 
-    if (lineBeginsWithUnorderedList.test(previousText) && lineBeginsWithUnorderedList.test(insertedElementText)) {
-      insertedElementText = insertedElementText.replace(lineBeginsWithUnorderedList, "");
-    } else if (lineBeginsWithOrderedList.test(previousText) && lineBeginsWithOrderedList.test(insertedElementText)) {
-      insertedElementText = insertedElementText.replace(lineBeginsWithOrderedList, "");
+    if (
+      lineBeginsWithUnorderedList.test(previousText) &&
+      lineBeginsWithUnorderedList.test(insertedElementText)
+    ) {
+      insertedElementText = insertedElementText.replace(
+        lineBeginsWithUnorderedList,
+        "",
+      );
+    } else if (
+      lineBeginsWithOrderedList.test(previousText) &&
+      lineBeginsWithOrderedList.test(insertedElementText)
+    ) {
+      insertedElementText = insertedElementText.replace(
+        lineBeginsWithOrderedList,
+        "",
+      );
     }
-
 
     if (matches && matches[1]) {
       let previousTextTrimmed = insertedElementText
