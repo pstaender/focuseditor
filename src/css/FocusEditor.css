@@ -200,7 +200,10 @@ focus-editor {
       padding-right: 0.25rem;
 
       width: calc(
-        100% - calc(var(--margin-left-factor) * var(--space-left) + var(--margin-left)) -
+        100% -
+          calc(
+            var(--margin-left-factor) * var(--space-left) + var(--margin-left)
+          ) -
           1.25rem
       );
 
@@ -455,6 +458,135 @@ focus-editor.highlight-current-paragraph .focus-editor {
     background: none;
     &:after {
       display: none;
+    }
+  }
+}
+
+focus-editor:has(.block .table) {
+  --table-border-thickness: 3.5px;
+  --color-border: var(--color-grey);
+
+  .table {
+    span {
+      position: relative;
+      --height-offest: 0.9em;
+      &:first-child:before {
+        content: "";
+        position: absolute;
+        left: var(--table-border-thickness);
+        top: -0.55em;
+        height: calc(100% + var(--height-offest));
+        width: var(--table-border-thickness);
+        background: var(--color-border);
+      }
+      &:after {
+        content: "";
+        position: absolute;
+        right: var(--table-border-thickness);
+        top: -0.55em;
+        height: calc(100% + var(--height-offest));
+        width: var(--table-border-thickness);
+        background: var(--color-border);
+      }
+    }
+  }
+  .table-header-text.table-with-extra-class {
+    span:last-child {
+      display: none;
+    }
+  }
+  .table-header-text {
+    font-weight: bold;
+  }
+  .table-header-text, .table-header-separator, .table-row {
+    white-space: pre;
+  }
+  .table-header-separator {
+    position: relative;
+    display: inline-block;
+    color: color-mix(in srgb, currentColor 40%, transparent);
+    @media print {
+      color: transparent;
+    }
+    &:before {
+      content: "";
+      position: absolute;
+      left: var(--table-border-thickness);
+      top: calc(50%);
+      height: var(--table-border-thickness);
+      width: calc(100% - calc(2 * var(--table-border-thickness)));
+      background: var(--color-border);
+      z-index: 10;
+    }
+    span:before {
+      background: var(--color-border) !important;
+      top: 0 !important;
+      height: calc(100%) !important;
+    }
+    span:after {
+      background: var(--color-border) !important;
+      top: 0 !important;
+      height: calc(100%) !important;
+    }
+  }
+
+  .table-row-even > span {
+    padding: 0.25em 0;
+    background-color: var(--color-grey-lighter);
+    z-index: -1; /* otherwise it will cover the caret */
+  }
+  .table-row-even > span:first-child {
+    background: linear-gradient(
+      to right,
+      transparent 0px,
+      transparent var(--table-border-thickness),
+      var(--color-grey-lighter) calc(var(--table-border-thickness) + 1px),
+      var(--color-grey-lighter) 100%
+    );
+  }
+  .table-row-even > span:last-child {
+    background: linear-gradient(
+      to right,
+      var(--color-grey-lighter) 0px,
+      var(--color-grey-lighter) calc(100% - var(--table-border-thickness)),
+      transparent calc(var(--table-border-thickness) + 1px),
+      transparent 100%
+    );
+  }
+
+  /* TOP AND BOTTOM BORDER: TODO make this optional */
+  .table-row-last {
+    display: inline-block;
+    position: relative;
+    &:before {
+      content: "";
+      position: absolute;
+      left: var(--table-border-thickness);
+      bottom: calc(-1.7 * var(--table-border-thickness));
+      height: calc(1.5 * var(--table-border-thickness));
+      width: calc(100% - calc(2 * var(--table-border-thickness)));
+      background: var(--color-border);
+    }
+  }
+  .table-header-text {
+    display: inline-block;
+    position: relative;
+    /* looks nicer, but the transition from markdown to table is harder :/ */
+    line-height: 1em;
+    transform: translateY(
+      0.7em
+    );
+    > span {
+      display: inline-block;
+    }
+    &:before {
+      content: "";
+      position: absolute;
+      left: var(--table-border-thickness);
+      top: calc(-1em + var(--table-border-thickness));
+      height: calc(1.5 * var(--table-border-thickness));
+      width: calc(100% - calc(2 * var(--table-border-thickness)));
+      background: var(--color-border);
     }
   }
 }

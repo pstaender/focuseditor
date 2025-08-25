@@ -17,6 +17,8 @@ class FocusEditorCore {
   #scrollIntoViewOptions = { block: "center" };
   #target = null;
   #replaceHttpUrlsWithLinks = false;
+  #renderMarkdownTables = false;
+  #customPasteText = null;
 
   #keyboardShortcuts = {
     refresh: {
@@ -139,7 +141,7 @@ class FocusEditorCore {
    * (Re)renders markdown
    * Can be helpful if not all elements are updated correctly.
    * Triggering refresh may change the caret position as well.
-   * @deprecated use `refresh()` instead.
+   * If possible use `refresh()` instead, it's less disruptive and faster.
    */
   fullRefresh() {
     let cursor = Cursor.getCurrentCursorPosition(this.target);
@@ -162,6 +164,23 @@ class FocusEditorCore {
   }
 
   refresh() {
+    let blockWithCaret = this.target.querySelector(".block.with-caret");
+    if (/\n/g.test(blockWithCaret?.innerText?.trim())) {
+      const lines = blockWithCaret.innerText.split(/\n/g);
+      lines.forEach((text, i) => {
+        if (text.trim() === "") {
+          text = " ";
+        }
+        let div = document.createElement("div");
+        div.classList.add("block");
+        div.textContent = text;
+        if (i === lines.length - 1) {
+          blockWithCaret.innerText = text;
+        } else {
+          blockWithCaret.before(div);
+        }
+      });
+    }
     this.#updateChildrenElementsWithMarkdownClasses();
   }
 
@@ -208,6 +227,9 @@ class FocusEditorCore {
     }
     if (this.#replaceHttpUrlsWithLinks) {
       helper.replaceHttpUrlsWithLinks(children, document);
+    }
+    if (this.#renderMarkdownTables) {
+      md2html.convertElementsWithMarkdownTablesToVisualTables(children);
     }
     children.forEach((e) =>
       e
@@ -315,6 +337,10 @@ class FocusEditorCore {
     }
   }
 
+  set customPasteText(text) {
+    this.#customPasteText = text;
+  }
+
   set placeholder(placeholder) {
     this.#placeholder = placeholder;
     this.#checkPlaceholder();
@@ -368,6 +394,10 @@ class FocusEditorCore {
     );
   }
 
+  set renderMarkdownTables(value) {
+    this.#renderMarkdownTables = value;
+  }
+
   get target() {
     return this.#target;
   }
@@ -386,11 +416,75 @@ class FocusEditorCore {
 
     event.preventDefault();
     const current = helper.currentBlockWithCaret();
+    if (!current?.textContent) {
+      return;
+    }
     this.#storeLastCaretPosition();
 
     const caretPosition = Cursor.getCurrentCursorPosition(
       helper.currentBlockWithCaret(),
     );
+
+    if (
+      /*this.#renderMarkdownTables && */
+      current.textContent.startsWith("|")
+    ) {
+      let tabSize = this.#tabSize === "\t" ? 4 : Number(this.#tabSize);
+      if (event.shiftKey) {
+        tabSize *= -1;
+      }
+      let offset = caretPosition % tabSize;
+      if (offset === 0) offset = tabSize;
+      if (event.altKey) {
+        // tab to next |
+        if (event.shiftKey) {
+          let charOffset = current.textContent
+            .substring(0, caretPosition - 1)
+            .lastIndexOf("|");
+          if (charOffset < 0 && current.previousElementSibling) {
+            // move to previous row
+            Cursor.setCurrentCursorPosition(
+              current.previousElementSibling.textContent.length - 1,
+              current.previousElementSibling,
+            );
+            return;
+          }
+          Cursor.setCurrentCursorPosition(charOffset, current);
+        } else if (current.textContent.substring(caretPosition).includes("|")) {
+          let charOffset = current.textContent
+            .substring(caretPosition)
+            .indexOf("|");
+          Cursor.setCurrentCursorPosition(
+            caretPosition + charOffset + 1,
+            current,
+          );
+        } else if (
+          caretPosition >= current.textContent.length &&
+          current.nextElementSibling
+        ) {
+          // move to next row
+          Cursor.setCurrentCursorPosition(0, current.nextElementSibling);
+        } else if (current.previousElementSibling) {
+        }
+        return;
+      }
+      if (
+        tabSize >= 1 &&
+        caretPosition + offset <= current.textContent.length + 1
+      ) {
+        current.textContent =
+          current.textContent.substring(0, caretPosition) +
+          " ".repeat(offset) +
+          current.textContent.substring(caretPosition);
+      } else if (
+        tabSize >= 1 &&
+        caretPosition + offset > current.textContent.length + 1
+      ) {
+        current.textContent += " ".repeat(offset + 1);
+      }
+      Cursor.setCurrentCursorPosition(caretPosition + offset, current);
+      return;
+    }
 
     if (this.#tabSize === "\t") {
       if (event.shiftKey) {
@@ -471,9 +565,15 @@ class FocusEditorCore {
   }
 
   #onPaste(event) {
-    let pasteText = (event.clipboardData || window.clipboardData).getData(
-      "text",
-    );
+    let pasteText = null;
+    /* if customPasteText is set, use this */
+    if (this.#customPasteText !== null) {
+      pasteText = this.#customPasteText;
+      this.#customPasteText = null;
+    }
+    if (pasteText === null) {
+      pasteText = (event.clipboardData || window.clipboardData).getData("text");
+    }
 
     const selection = window.getSelection();
     if (!selection.rangeCount) return false;
@@ -722,7 +822,7 @@ class FocusEditorCore {
         This fixes this issue by replacing the <br> with a div.
       */
       if (helper.currentElementWithCaret() === this.target) {
-        let br = this.target.querySelector(':scope > br');
+        let br = this.target.querySelector(":scope > br");
         if (br) {
           let div = document.createElement("div");
           div.classList.add("block");
@@ -871,6 +971,13 @@ class FocusEditorCore {
 
     let matches = previousText.match(lineBeginsWithUnorderedList);
 
+    if (lineBeginsWithUnorderedList.test(previousText) && lineBeginsWithUnorderedList.test(insertedElementText)) {
+      insertedElementText = insertedElementText.replace(lineBeginsWithUnorderedList, "");
+    } else if (lineBeginsWithOrderedList.test(previousText) && lineBeginsWithOrderedList.test(insertedElementText)) {
+      insertedElementText = insertedElementText.replace(lineBeginsWithOrderedList, "");
+    }
+
+
     if (matches && matches[1]) {
       let previousTextTrimmed = insertedElementText
         .replace(lineBeginsWithUnorderedList, "" + (textSplits[1] || ""))
@@ -895,6 +1002,7 @@ class FocusEditorCore {
           (Number(matches[2].trim()) + 1) +
           matches[3] +
           " ";
+
         let previousTextTrimmed = insertedElementText
           .replace(lineBeginsWithOrderedList, "")
           .trim();

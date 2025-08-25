@@ -245,9 +245,92 @@ export function addParagraphClasses(elements, document) {
       el.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
     }
 
-    if (el.textContent.trim() === '') {
+    if (el.textContent.trim() === "") {
       el.innerHTML = EMPTY_LINE_HTML_PLACEHOLDER;
     }
   });
   return;
+}
+
+export function convertElementsWithMarkdownTablesToVisualTables(elements) {
+  let tableRows = [];
+
+  function columnsToVisualTable(columns) {
+    const ul = document.createElement("div");
+    columns.forEach((row, i) => {
+      const li = document.createElement("span");
+      li.innerHTML = (i === 0 ? "|" : "") + row + "|";
+      ul.appendChild(li);
+    });
+    return ul;
+  }
+
+  elements.forEach((el, i) => {
+    if (tableRows.length === 0) {
+      if (!/^\|.+?\|$/.test(el.textContent)) {
+        return;
+      }
+      if (
+        /^\|.+?\|/.test(el.textContent) &&
+        elements[i + 1] &&
+        /^\|\s*:*[-]+:*\s*\|/.test(elements[i + 1].textContent)
+      ) {
+        if (!elements[i + 1].textContent.trim().endsWith("|")) {
+          // if the next line is not a valid table line, stop here
+          return;
+        }
+        if (
+          !elements[i + 2] ||
+          !elements[i + 2].textContent.trim().endsWith("|")
+        ) {
+          // if the line after next line is not a valid table line, stop here
+          return;
+        }
+        // table header found
+        let columns = el.textContent.split(/\|/);
+        let tableExtraCssClass = null;
+        if (
+          columns.at(-2).startsWith(".") &&
+          elements[i + 1].textContent.split(/\|/).length + 1 === columns.length
+        ) {
+          tableExtraCssClass = columns.at(-2).replace(/^\./, "").trim();
+        }
+        columns = columns.slice(1, -1);
+        const table = columnsToVisualTable(columns);
+        table.classList.add("table-header-text");
+        table.classList.add("table");
+        if (tableExtraCssClass) {
+          table.classList.add("table-with-extra-class");
+          table.classList.add(`table-${tableExtraCssClass}`);
+        }
+        el.innerHTML = "";
+        el.append(table);
+        tableRows.push(columns);
+      }
+    } else if (/^\|.+?\|$/.test(el.textContent)) {
+      const columns = columnsToVisualTable(
+        el.textContent.split(/\|/).slice(1, -1),
+      );
+      if (tableRows.length === 1) {
+        columns.classList.add("table-header-separator");
+        columns.classList.add("table");
+      } else {
+        columns.classList.add("table");
+        columns.classList.add("table-row");
+        columns.classList.add(tableRows.length % 2 === 0 ? "table-row-odd" : "table-row-even");
+        if (
+          !elements[i + 1] ||
+          !elements[i + 1].textContent.trim().endsWith("|")
+        ) {
+          columns.classList.add("table-row-last");
+        }
+      }
+      el.innerHTML = "";
+      el.append(columns);
+
+      tableRows.push(columns);
+    } else {
+      tableRows = [];
+    }
+  });
 }
