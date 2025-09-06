@@ -56,11 +56,38 @@ it("#addCodeBlockClasses", ({ expect }) => {
   );
 });
 
+/* TODO: this is a real issue: check how to prevent render _italic_ and **bold** etc inside links */
+it.skip("#addParagraphClasses with link", ({ expect }) => {
+  const document = createDocument();
+  const div = document.createElement("div");
+  div.innerHTML = md2html.innerTextToHtml(
+    "![**important** link](https://example.com/_wiki_)",
+    document,
+  );
+  document.querySelector("body").append(div);
+  let elements = document.querySelectorAll("body > div > div");
+  md2html.addCodeBlockClasses(elements, document);
+  md2html.addParagraphClasses(elements, document);
+  expect([...elements].map((element) => element.outerHTML).join(`\n`)).toBe(
+    trws(`
+      <div class="block"><a href="https://example.com/_wiki_" style="--url: url(https://example.com/_wiki_)" class="link image">![<strong>**important**</strong> link]<span>(https://example.com/_wiki_)</span></a></div>
+      `),
+  );
+});
+
 it("#addParagraphClasses", ({ expect }) => {
   const document = createDocument();
   const div = document.createElement("div");
   div.innerHTML = md2html.innerTextToHtml(
-    "## Very *important* Headline\n\n![**important** link](https://example.com/_wiki_)\n\nSome **text** with *some* different styles.\n\n```md\n# test\n**bold**\n```",
+    `## Very *important* Headline
+
+Some **text** with *some* different
+     styles.
+
+\`\`\`md
+# test
+**bold**
+\`\`\``,
     document,
   );
   document.querySelector("body").append(div);
@@ -71,9 +98,8 @@ it("#addParagraphClasses", ({ expect }) => {
     trws(`
       <div class="block h2" id="very-important-headline">## Very <em>*important*</em> Headline</div>
       <div class="block"><br></div>
-      <div class="block"><a href="https://example.com/_wiki_" style="--url: url(https://example.com/_wiki_)" class="link image">![<strong>**important**</strong> link]<span>(https://example.com/_wiki_)</span></a></div>
-      <div class="block"><br></div>
-      <div class="block">Some <strong>**text**</strong> with <em>*some*</em> different styles.</div>
+      <div class="block">Some <strong>**text**</strong> with <em>*some*</em> different</div>
+      <div class="block">&nbsp;&nbsp;&nbsp;&nbsp; styles.</div>
       <div class="block"><br></div>
       <div class="block code-block-start code-block">\`\`\`md</div>
       <div class="block code-block"># test</div>

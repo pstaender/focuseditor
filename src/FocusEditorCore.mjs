@@ -464,7 +464,6 @@ class FocusEditorCore {
         ) {
           // move to next row
           Cursor.setCurrentCursorPosition(0, current.nextElementSibling);
-        } else if (current.previousElementSibling) {
         }
         return;
       }

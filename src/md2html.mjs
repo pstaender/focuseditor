@@ -123,7 +123,7 @@ function inlineMarkdown(text) {
       if (matches[1] || matches[3]) {
         return matches[0];
       }
-      return `<strong><em>${matches[2]}</em></strong>`;
+      return `<strong class="underscore"><em>${matches[2]}</em></strong>`;
     });
 
   // find *italic* / _italic_
@@ -138,7 +138,7 @@ function inlineMarkdown(text) {
       if (matches[1] || matches[3]) {
         return matches[0];
       }
-      return `<em>${matches[2]}</em>`;
+      return `<em class="underscore">${matches[2]}</em>`;
     });
 
   // find **bold text** / __bold text__
@@ -317,7 +317,9 @@ export function convertElementsWithMarkdownTablesToVisualTables(elements) {
       } else {
         columns.classList.add("table");
         columns.classList.add("table-row");
-        columns.classList.add(tableRows.length % 2 === 0 ? "table-row-odd" : "table-row-even");
+        columns.classList.add(
+          tableRows.length % 2 === 0 ? "table-row-odd" : "table-row-even",
+        );
         if (
           !elements[i + 1] ||
           !elements[i + 1].textContent.trim().endsWith("|")
@@ -331,6 +333,32 @@ export function convertElementsWithMarkdownTablesToVisualTables(elements) {
       tableRows.push(columns);
     } else {
       tableRows = [];
+    }
+  });
+}
+
+export function unifyTableCells(elements) {
+  let isInsideTable = false;
+  let maxCellWidths = [];
+
+  elements.forEach((e) => {
+    if (e.querySelector(".table-header-text.table")) {
+      isInsideTable = true;
+    }
+    if (!isInsideTable) {
+      return;
+    }
+
+    if (e.querySelector(".table.table-row-last")) {
+      isInsideTable = false;
+      let previousElement = e;
+      while (previousElement.querySelector(".table")) {
+        previousElement.querySelectorAll(".table > span").forEach((el, i) => {
+          el.style.setProperty("--max-cell-width", `${maxCellWidths[i]}em`);
+        });
+        previousElement = previousElement.previousElementSibling;
+      }
+
     }
   });
 }
