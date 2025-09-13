@@ -250,10 +250,10 @@ focus-editor {
       color: currentColor;
       text-decoration: none;
       display: inline;
-      transition: color 0.1s;
+      transition: color 0.3s;
       span {
         color: var(--color-grey-lighter);
-        transition: color 0.1s;
+        transition: color 0.3s;
       }
 
       @media (hover) {

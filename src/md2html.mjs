@@ -111,6 +111,24 @@ function inlineMarkdown(text) {
 
   let html = helper.escapeHTMLEntities(text);
 
+  let htmlBeforeLinkCheck = html;
+
+  // find links
+  html = html.replace(/(!)*\[(.+?)\]\((.*)\)/g, (...matches) => {
+    let classes = ["link", matches[1] ? "image" : ""]
+      .filter((v) => !!v)
+      .join(" ");
+    let url = helper.stripHtml(matches[3].split(/\s+/)[0]);
+    let linkText = matches[2];
+    linkText = inlineMarkdown(linkText);
+    return `<a href="${url}" style="--url: url(${url})" class="${classes}">${matches[1] || ""}[${linkText}]<span>(${url})</span></a>`;
+  });
+
+  if (htmlBeforeLinkCheck !== html) {
+    // if a link was found, do not parse more markdown inside the link
+    return html;
+  }
+
   // find bold+italic
   html = html
     .replace(/([*\\]*)(\*{3}[^\s*]+.*?\*{3})([*]*)/g, (...matches) => {
@@ -162,15 +180,6 @@ function inlineMarkdown(text) {
       return matches[0];
     }
     return `<s>${matches[2]}</s>`;
-  });
-
-  // find links
-  html = html.replace(/(!)*\[(.+?)\]\((.*)\)/g, (...matches) => {
-    let classes = ["link", matches[1] ? "image" : ""]
-      .filter((v) => !!v)
-      .join(" ");
-    let url = helper.stripHtml(matches[3].split(/\s+/)[0]);
-    return `<a href="${url}" style="--url: url(${url})" class="${classes}">${matches[1] || ""}[${matches[2]}]<span>(${url})</span></a>`;
   });
 
   return html;

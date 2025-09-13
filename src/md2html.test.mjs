@@ -56,8 +56,7 @@ it("#addCodeBlockClasses", ({ expect }) => {
   );
 });
 
-/* TODO: this is a real issue: check how to prevent render _italic_ and **bold** etc inside links */
-it.skip("#addParagraphClasses with link", ({ expect }) => {
+it("#addParagraphClasses with link", ({ expect }) => {
   const document = createDocument();
   const div = document.createElement("div");
   div.innerHTML = md2html.innerTextToHtml(
