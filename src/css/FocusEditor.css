@@ -161,29 +161,19 @@ focus-editor {
     }
 
     .h1 {
-      transform: translateX(
-        calc(var(--margin-left-factor) * -0.3 * var(--space-left))
-      );
+      text-indent: calc(var(--margin-left-factor) * -0.3 * var(--space-left));
     }
     .h2 {
-      transform: translateX(
-        calc(var(--margin-left-factor) * -0.45 * var(--space-left))
-      );
+      text-indent: calc(var(--margin-left-factor) * -0.45 * var(--space-left));
     }
     .h3 {
-      transform: translateX(
-        calc(var(--margin-left-factor) * -0.61 * var(--space-left))
-      );
+      text-indent: calc(var(--margin-left-factor) * -0.61 * var(--space-left));
     }
     .h4 {
-      transform: translateX(
-        calc(var(--margin-left-factor) * -0.77 * var(--space-left))
-      );
+      text-indent: calc(var(--margin-left-factor) * -0.77 * var(--space-left));
     }
     .h5 {
-      transform: translateX(
-        calc(var(--margin-left-factor) * -0.91 * var(--space-left))
-      );
+      text-indent: calc(var(--margin-left-factor) * -0.91 * var(--space-left));
     }
     .blockquote {
       margin-bottom: 0;
